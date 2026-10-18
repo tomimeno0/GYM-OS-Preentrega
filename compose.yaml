@@ -1,0 +1,19 @@
+name: gym-os-preentrega
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run npm run setup}
+      MYSQL_DATABASE: ${DB_NAME:-gym_os_preentrega}
+      MYSQL_USER: ${DB_USER:-gymos}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Run npm run setup}
+    ports: ['127.0.0.1:${DB_PORT:-3309}:3306']
+    volumes: ['mysql-data:/var/lib/mysql']
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '--silent']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+volumes:
+  mysql-data:
