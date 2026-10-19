@@ -2333,6 +2333,28 @@ tbody tr:last-child td {
   color: var(--ink);
   margin: 12px 0 6px;
 }
+.ai-suggestions {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+.ai-suggestions button {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ai-suggestions button:hover:not(:disabled) {
+  background: #f5f6f1;
+}
+.ai-suggestions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .ai-thread form {
   padding: 18px 22px;
   border-top: 1px solid var(--line);

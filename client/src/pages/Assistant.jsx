@@ -1,17 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bot, Send } from 'lucide-react';
 import { api, useAction, useAuth, useResource } from '../lib';
-import {
-  Badge,
-  Button,
-  Confirm,
-  Feedback,
-  PageTitle,
-  Resource,
-  Select,
-  Textarea,
-} from '../components/ui';
+import { Badge, Button, Feedback, PageTitle, Resource, Select, Textarea } from '../components/ui';
 
 function Chat({ enabled }) {
   const conversations = useResource('/ai/conversations');
@@ -19,6 +10,11 @@ function Chat({ enabled }) {
   const [mode, setMode] = useState('entrenador');
   const [question, setQuestion] = useState('');
   const action = useAction();
+  const messagesRef = useRef(null);
+  useEffect(() => {
+    const messages = messagesRef.current;
+    if (messages) messages.scrollTop = messages.scrollHeight;
+  }, [conversation]);
   function open(id) {
     return action.run(async () => {
       const value = await api(`/ai/conversations/${id}`);
@@ -69,7 +65,7 @@ function Chat({ enabled }) {
           </Resource>
         </aside>
         <div className="ai-thread">
-          <div className="ai-messages" aria-live="polite">
+          <div className="ai-messages" aria-live="polite" ref={messagesRef}>
             {conversation?.mensajes?.length ? (
               conversation.mensajes.map((message) => (
                 <div key={message.id} className={`ai-message ${message.rol}`}>
@@ -81,7 +77,23 @@ function Chat({ enabled }) {
               <div className="ai-welcome">
                 <Bot size={30} />
                 <h3>¿En qué te ayudo?</h3>
-                <p>Preguntá sobre tu entrenamiento, hábitos o el uso de GYM—OS.</p>
+                <p>Podés empezar con un saludo o elegir una consulta para escribirla abajo.</p>
+                <div className="ai-suggestions">
+                  {[
+                    'Quiero empezar a entrenar, ¿por dónde arranco?',
+                    '¿Qué diferencia hay entre series y repeticiones?',
+                    '¿Cómo creo y guardo una rutina en esta app?',
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      disabled={!enabled || action.busy}
+                      onClick={() => setQuestion(suggestion)}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -119,6 +131,11 @@ function Chat({ enabled }) {
               onChange={(e) => setQuestion(e.target.value)}
             />
             <Feedback {...action} />
+            {action.busy && (
+              <p className="small muted" role="status">
+                Consultando a Cohere…
+              </p>
+            )}
             <Button type="submit" busy={action.busy} disabled={!enabled || !question.trim()}>
               <Send size={17} />
               Enviar
@@ -141,6 +158,9 @@ export default function Assistant() {
         title="Consultá al asistente."
         description="Chat con Cohere e historial. Esta preentrega no genera ni adapta planes."
       >
+        <Button variant="secondary" busy={status.loading} onClick={status.reload}>
+          Comprobar conexión
+        </Button>
         {status.data && (
           <Badge tone={status.data.disponible ? 'green' : ''}>
             {status.data.modo_prueba
