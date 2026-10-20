@@ -2,6 +2,31 @@
 
 Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
 
+## Mapa visual para ubicarte
+
+Tu pantalla reúne datos que ya cargaron otros módulos. Es una consulta: cambiar el período del gráfico no modifica las mediciones.
+
+```mermaid
+flowchart TD
+    A["👤 Usuario<br/>Abre panel o elige período de progreso"]
+    B["🖥️ Fitness.jsx<br/>Dashboard / Progress"]
+    C["🚪 fitness.routes.js<br/>GET /api/v1/dashboard<br/>GET /api/v1/progress?days=90"]
+    D["🧭 fitness.controller.js<br/>getProgress() / progressData()<br/>Lectura autorizada del propietario"]
+    E[("💾 MySQL · Sequelize<br/>Mediciones de Gade<br/>Objetivos de Paulo<br/>Sesiones de Iván y rutinas")]
+    F["📊 CÁLCULO EN SERVIDOR<br/>Inicial, actual, variación y actividad<br/>goalPercentage() calcula avance"]
+    G["📈 PRESENTACIÓN · WeightChart()<br/>Recharts dibuja la evolución<br/>Tarjetas e historial muestran el resumen"]
+    H["🫙 Sin información<br/>Estado vacío o métrica no disponible<br/>No inventa valores"]
+    X["⛔ Error controlado<br/>Sesión o período no válidos"]
+    A --> B --> C --> D
+    E -->|Solo datos propios| D
+    D --> F --> G
+    F -->|Faltan registros| H
+    C -->|Solicitud rechazada| X
+    G -.->|Otro período: nueva consulta| B
+```
+
+La base contiene las mediciones y sesiones; el servidor calcula el resumen; React y Recharts lo presentan. En la preentrega no hay consumo ni macros en tu bloque.
+
 ## Tu funcionalidad
 
 **Casos:** CU011 y panel de resumen. **Pantallas:** `/dashboard, /progreso`.

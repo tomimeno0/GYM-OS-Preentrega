@@ -2,6 +2,41 @@
 
 Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
 
+## Mapa visual para ubicarte
+
+La cuenta entra por los formularios y sale con una sesión. La recuperación usa un enlace temporal; no necesita conocer la contraseña anterior.
+
+```mermaid
+flowchart TD
+    A["👤 Usuario<br/>Registro, login o recuperación"]
+    B["🖥️ PANTALLA · Auth.jsx<br/>Auth() reúne los datos"]
+    C["🚪 ENTRADA · accounts.routes.js<br/>Express + esquemas Zod<br/>Valida formato y limita intentos"]
+    D{"¿Qué quiere hacer?"}
+    E["🔐 REGISTRARSE · register()<br/>Correo único + hashPassword()<br/>Crea usuario Cliente y sesión"]
+    F["🔑 INGRESAR · login()<br/>Comprueba contraseña y cuenta activa<br/>sessionFor() crea sesión"]
+    G["📨 RECUPERAR · requestRecovery()<br/>Token temporal de un solo uso<br/>sendRecovery() prepara enlace"]
+    H["🔄 RESTABLECER · resetPassword()<br/>Verifica token y vencimiento<br/>Nuevo hash + revoca sesiones"]
+    I[("💾 MySQL · Sequelize<br/>usuarios, roles, usuario_roles<br/>sesiones y recuperaciones")]
+    J["🍪 SESIÓN · Cookie HttpOnly<br/>authenticate() valida próximos accesos<br/>React abre el panel"]
+    K["🚪 SALIR · logout()<br/>Revoca sesión y borra cookie"]
+    X["⛔ Error controlado<br/>Datos inválidos, correo duplicado<br/>o credenciales incorrectas"]
+    A --> B --> C --> D
+    D -->|Registro| E
+    D -->|Login| F
+    D -->|Recuperación| G
+    G -->|Usuario abre enlace del archivo privado| H
+    E --> I
+    F --> I
+    H --> I
+    I -->|Registro o login correctos| J
+    H -->|Después del cambio, volver a ingresar| B
+    J -->|Confirma salir| K
+    E -->|Correo ocupado| X
+    F -->|Acceso rechazado| X
+```
+
+La pantalla reúne datos; el controlador verifica; MySQL conserva hashes y sesiones. En esta preentrega la recuperación genera un archivo privado de correo, no una entrega SMTP comprobada.
+
 ## Tu funcionalidad
 
 **Casos:** CU001–CU004. **Pantallas:** `/registro, /login, /recuperar, /restablecer`.

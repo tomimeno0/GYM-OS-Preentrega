@@ -2,6 +2,34 @@
 
 Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
 
+## Mapa visual para ubicarte
+
+Mi cuenta modifica a la persona que inició sesión. Editar el perfil y eliminar la cuenta siguen caminos distintos; el borrado pide contraseña y confirmación.
+
+```mermaid
+flowchart TD
+    A["👤 Usuario autenticado<br/>Abre Mi cuenta"]
+    B["🖥️ Account.jsx<br/>Account() carga datos y formulario"]
+    C{"¿Qué quiere hacer?"}
+    D["✏️ EDITAR · PATCH /api/v1/me<br/>accounts.routes.js valida campos"]
+    E["🧭 accounts.controller.js<br/>updateProfile()<br/>Guarda campos permitidos<br/>encrypt() cifra el teléfono"]
+    F[("💾 MySQL · Sequelize<br/>usuarios + bitacora<br/>Incluye consentimiento_ia")]
+    G["🖥️ publicUser()<br/>Devuelve datos permitidos<br/>decrypt() recupera el teléfono<br/>No devuelve hashes ni claves"]
+    H["🗑️ ELIMINAR · DELETE /api/v1/me<br/>Confirmación + contraseña actual"]
+    I["🔎 deleteAccount() → deleteUserData()<br/>Comprueba contraseña<br/>Borra datos dependientes en transacción<br/>Conserva bitácora sin identificar la cuenta"]
+    J["🚪 Cuenta eliminada<br/>Cookie borrada y acceso revocado"]
+    K["🤖 Chat de Tomás<br/>Consulta el consentimiento vigente<br/>antes de compartir con Cohere"]
+    X["⛔ Error controlado<br/>Campos inválidos o contraseña incorrecta"]
+    A --> B --> C
+    C -->|Editar perfil| D --> E --> F --> G
+    F -.->|Consentimiento| K
+    C -->|Eliminar cuenta| H --> I --> J
+    D -->|Formato inválido| X
+    I -->|Contraseña rechazada| X
+```
+
+Gianluca maneja ingreso y recuperación; vos manejás el perfil propio y su borrado. Revocar consentimiento impide nuevas consultas al proveedor, pero no equivale a eliminar el historial ya guardado.
+
 ## Tu funcionalidad
 
 **Casos:** CU005, CU006. **Pantallas:** `/me`.

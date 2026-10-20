@@ -2,6 +2,30 @@
 
 Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
 
+## Mapa visual para ubicarte
+
+Pensá las medidas como una línea de fotos en el tiempo: cada carga agrega un punto nuevo. Mateo usa esos puntos para dibujar la evolución.
+
+```mermaid
+flowchart TD
+    A["👤 Usuario<br/>Peso, altura, fecha y datos opcionales"]
+    B["🖥️ Fitness.jsx<br/>MeasurementForm<br/>Carga inicial o nueva medición"]
+    C["🚪 fitness.routes.js + measurementSchema<br/>POST /api/v1/measurements/initial<br/>o POST /api/v1/measurements<br/>Zod valida campos y rangos"]
+    D["🧭 fitness.controller.js<br/>addMeasurement()<br/>Inicial única o perfil previo<br/>Fecha posterior y no futura"]
+    E[("💾 MySQL · Sequelize<br/>mediciones_fisicas<br/>Inserta una nueva fila<br/>No pisa las mediciones anteriores")]
+    F["🔎 latestMeasurement()<br/>Obtiene la más reciente"]
+    G["📚 listMeasurements()<br/>Historial propio ordenado y paginado"]
+    H["🖥️ Progreso<br/>Se ve la medición nueva<br/>y siguen existiendo las anteriores"]
+    X["⛔ Error controlado<br/>Rangos, fecha futura<br/>o carga inicial duplicada"]
+    A --> B --> C --> D --> E
+    E --> F --> H
+    E --> G --> H
+    C -->|Formato inválido| X
+    D -->|Regla incumplida| X
+```
+
+Tu bloque registra y conserva medidas. El perfil corporal actual sale de la última medición; los datos personales de la cuenta pertenecen al bloque de Simón.
+
 ## Tu funcionalidad
 
 **Casos:** CU007, CU008. **Pantallas:** `Carga de medidas dentro de /progreso`.

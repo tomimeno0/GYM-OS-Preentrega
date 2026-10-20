@@ -2,6 +2,33 @@
 
 Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
 
+## Mapa visual para ubicarte
+
+El editor arma el plan; el controlador lo valida y guarda; el detalle lo vuelve a leer. La ejecución de ese plan pasa al módulo de Iván.
+
+```mermaid
+flowchart TD
+    A["👤 Usuario<br/>Crea o edita una rutina manual"]
+    B["🖥️ Routines.jsx<br/>RoutineEditor + RoutineForm<br/>Días, ejercicios, series y descansos"]
+    C["📖 Catálogo textual<br/>searchExercises() / getExercise()<br/>También admite ejercicios manuales"]
+    D["🚪 fitness.routes.js<br/>POST /api/v1/routines<br/>o PUT /api/v1/routines/:id<br/>routineSchema valida los datos"]
+    E["🧭 routines.controller.js<br/>saveRoutine() → persistRoutine()<br/>normalizeExercises() valida orden y catálogo<br/>Comprueba propietario y objetivo"]
+    F[("💾 MySQL · Sequelize<br/>rutinas + rutina_ejercicios<br/>Cabecera y ejercicios juntos<br/>Transacción con bitácora e integridad")]
+    G["🖥️ RoutineDetail<br/>getRoutine() carga el plan guardado"]
+    H["🏋️ Iván · startWorkout()<br/>Copia el plan al iniciar una sesión<br/>Las sesiones previas no cambian"]
+    I["🗂️ removeRoutine()<br/>Baja lógica confirmada<br/>No permite sesión en curso"]
+    X["⛔ Error controlado<br/>Orden repetido, catálogo inexistente<br/>o registro ajeno"]
+    A --> B
+    C -->|Seleccionar ejercicio| B
+    B --> D --> E --> F --> G
+    G -->|Comenzar entrenamiento| H
+    G -->|Confirmar baja| I
+    I -->|Actualiza estado sin borrar historial| F
+    E -->|Datos o permisos inválidos| X
+```
+
+En esta versión las rutinas son manuales. Joaquín explica el catálogo; Iván registra el entrenamiento. La transacción impide guardar la cabecera sin sus ejercicios.
+
 ## Tu funcionalidad
 
 **Casos:** CU014, CU016, CU018, CU020. **Pantallas:** `/rutinas, /rutinas/nueva, /rutinas/:id/editar`.

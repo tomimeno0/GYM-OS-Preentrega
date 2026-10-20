@@ -2,6 +2,34 @@
 
 Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
 
+## Mapa visual para ubicarte
+
+Hay dos caminos de consulta: los ejercicios salen de un catálogo JSON y las rutinas propias salen de MySQL. Consultar un ejercicio no llama a Cohere.
+
+```mermaid
+flowchart TD
+    A["👤 Usuario<br/>Busca ejercicio o abre una rutina"]
+    B["🖥️ Routines.jsx<br/>ExerciseCatalog / RoutineDetail"]
+    C{"¿Qué consulta?"}
+    D["🚪 fitness.routes.js<br/>GET /api/v1/exercises<br/>GET /api/v1/exercises/:id"]
+    E["🧭 catalog.controller.js<br/>searchExercises() / getExercise()<br/>Texto, categoría, equipo y paginación"]
+    F[("📖 Catálogo JSON<br/>exercises.json + provenance.json<br/>1.324 ejercicios textuales")]
+    G["🖥️ Ficha del ejercicio<br/>Instrucciones y selección<br/>para el editor de Valentín"]
+    H["🚪 GET /api/v1/routines/:id<br/>routines.controller.js<br/>getRoutine() → routineDetail()<br/>Comprueba propietario"]
+    I[("💾 MySQL · Sequelize<br/>rutinas + rutina_ejercicios")]
+    J["🖥️ Detalle de rutina<br/>Días, series, repeticiones y cargas<br/>Inicio pasa al módulo de Iván"]
+    X["⛔ Error controlado<br/>ID inexistente o rutina ajena"]
+    A --> B --> C
+    C -->|Ejercicios| D --> E
+    F -->|Lee catálogo| E --> G
+    C -->|Rutina propia| H
+    I -->|Lee plan y ejercicios| H --> J
+    E -->|ID desconocido| X
+    H -->|Sin acceso| X
+```
+
+El catálogo ayuda a elegir; la rutina contiene la planificación guardada. Tu bloque consulta y conecta pantallas; la edición manual corresponde a Valentín y la sesión deportiva a Iván.
+
 ## Tu funcionalidad
 
 **Casos:** CU017 y catálogo de apoyo. **Pantallas:** `/ejercicios, /rutinas/:id`.

@@ -2,6 +2,33 @@
 
 Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
 
+## Mapa visual para ubicarte
+
+La meta une un punto de partida con un resultado deseado. El porcentaje se calcula al consultar; completar una meta es una acción confirmada del usuario.
+
+```mermaid
+flowchart TD
+    A["👤 Usuario con medición previa<br/>Define tipo, valor, unidad y fechas"]
+    B["🖥️ Fitness.jsx<br/>Goals + GoalForm"]
+    C["🚪 fitness.routes.js<br/>POST /api/v1/goals<br/>Valida el contrato con Zod"]
+    D["🧭 fitness.controller.js<br/>createGoal() + validateGoalValues()<br/>Unidad, dirección y valor coherentes<br/>Un solo objetivo activo"]
+    E[("💾 MySQL · Sequelize<br/>objetivos + medición de partida<br/>Conserva el valor inicial")]
+    F["📈 CONSULTAR AVANCE<br/>progressData() + goalPercentage()<br/>Compara valor inicial, actual y meta"]
+    G["🖥️ Objetivos / progreso<br/>Muestra porcentaje o falta de datos"]
+    H{"¿Qué confirma el usuario?"}
+    I["✅ completeGoal()<br/>Objetivo activo → completado<br/>Conserva fecha y vínculo histórico"]
+    J["🗂️ removeGoal()<br/>Baja lógica<br/>Libera la meta activa"]
+    X["⛔ Rechazo controlado<br/>Sin medidas, segunda meta activa<br/>o valores incompatibles"]
+    A --> B --> C --> D --> E --> F --> G --> H
+    H -->|Completar| I
+    H -->|Dar de baja| J
+    I -->|Actualiza estado| E
+    J -->|Actualiza estado| E
+    D -->|No cumple las reglas| X
+```
+
+Gade carga las medidas, vos definís las reglas de la meta y Mateo muestra el progreso. Completar o dar de baja no borra el vínculo histórico de una rutina.
+
 ## Tu funcionalidad
 
 **Casos:** CU009, CU010, CU012, CU013. **Pantallas:** `/objetivos`.

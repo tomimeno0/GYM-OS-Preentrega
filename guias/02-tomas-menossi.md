@@ -2,6 +2,36 @@
 
 Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
 
+## Mapa visual para ubicarte
+
+Tu parte es el chat con IA de la preentrega. Imaginalo como un recorrido: la pantalla recibe, el servidor organiza, Cohere responde y la base guarda.
+
+```mermaid
+flowchart TD
+    A["👤 Usuario<br/>Escribe una consulta"]
+    B["🖥️ PANTALLA · React<br/>Assistant.jsx<br/>Muestra el chat y envía el mensaje"]
+    C["🚪 ENTRADA · Express<br/>fitness.routes.js<br/>POST /api/v1/ai/chat<br/>Valida los datos recibidos"]
+    D["🧭 COORDINADOR<br/>ai.controller.js → chat()<br/>Comprueba consentimiento y conversación propia"]
+    E["📦 PREPARA EL CONTEXTO<br/>chatInstructions() + historial<br/>Reglas + últimos 10 mensajes + consulta"]
+    F["📡 CONEXIÓN CON COHERE<br/>cohere.controller.js → cohereChat()<br/>Envía la consulta usando la clave privada"]
+    G["🧠 COHERE · Servicio externo<br/>El modelo genera la respuesta"]
+    H["🔎 REVISA LA RESPUESTA<br/>structuredChat()<br/>Valida el formato JSON<br/>chat() aplica el límite de temas"]
+    I[("💾 MEMORIA · MySQL<br/>Sequelize guarda juntos<br/>la pregunta y la respuesta<br/>Tablas: conversaciones y mensajes")]
+    J["💬 PANTALLA · React<br/>Muestra la respuesta<br/>y actualiza el historial"]
+    X["⛔ Error controlado<br/>La pantalla explica el problema"]
+
+    A --> B --> C --> D
+    D -->|"Permisos correctos"| E
+    D -->|"Sin consentimiento o acceso"| X
+    E --> F --> G --> H
+    H -->|"Respuesta válida"| I --> J
+    F -->|"Falla de conexión o proveedor"| X
+    H -->|"Formato inválido tras reintentar"| X
+    I -.->|"Aporta el historial en la próxima consulta"| E
+```
+
+Assistant.jsx es la cara; ai.controller.js coordina; cohere.controller.js conecta con el proveedor. La clave queda en el servidor y MySQL conserva el historial. aiStatus() comprueba disponibilidad por separado; no genera respuestas. La validación del formato no garantiza que el contenido del modelo sea correcto.
+
 ## Tu funcionalidad
 
 **Casos:** CU031. **Pantallas:** `/asistente y consentimiento en /me`.

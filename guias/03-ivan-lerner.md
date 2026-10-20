@@ -2,6 +2,34 @@
 
 Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
 
+## Mapa visual para ubicarte
+
+La rutina indica qué hacer; el entrenamiento conserva qué se hizo. La copia inicial evita que una edición posterior de la rutina cambie sesiones viejas.
+
+```mermaid
+flowchart TD
+    A["👤 Usuario<br/>Elige rutina y día"]
+    B["🖥️ Routines.jsx<br/>RoutineDetail → WorkoutForm<br/>Inicio, avance y cierre"]
+    C["🚪 fitness.routes.js<br/>POST /api/v1/workouts<br/>Sesión y datos válidos"]
+    D["🧭 workouts.controller.js<br/>startWorkout()<br/>Rutina propia activa + día con ejercicios<br/>Impide otra sesión en curso"]
+    E[("💾 MySQL · Sequelize<br/>entrenamientos + entrenamiento_ejercicios<br/>Copia independiente de la rutina")]
+    F["✍️ Usuario registra lo realizado<br/>Series, repeticiones, carga y distancia"]
+    G["🔎 saveWorkout()<br/>PUT /api/v1/workouts/:id<br/>Valida propietario, estado y ejercicios"]
+    H{"¿Guarda avance o cierra?"}
+    I["▶️ Sigue iniciado<br/>Puede retomar y guardar otra vez"]
+    J["🏁 Cierre confirmado<br/>Completado, incompleto o cancelado<br/>Fija fecha final y libera sesión activa"]
+    K["📚 Workouts / WorkoutDetail<br/>Historial paginado y detalle<br/>Sesión cerrada sin edición"]
+    X["⛔ Rechazo controlado<br/>Sesión duplicada, datos ajenos<br/>o intento de editar un cierre"]
+    A --> B --> C --> D --> E --> F --> G --> H
+    H -->|Avance| I --> F
+    H -->|Cierre| J --> K
+    G -->|Guarda cambios juntos| E
+    D -->|No cumple las reglas| X
+    G -->|No cumple las reglas| X
+```
+
+startWorkout() abre una sesión; saveWorkout() registra avance o cierre. Cancelar una sesión es un estado guardado; cancelar un diálogo de confirmación no envía cambios.
+
 ## Tu funcionalidad
 
 **Casos:** CU021. **Pantallas:** `/entrenamientos, /entrenamientos/:id`.
