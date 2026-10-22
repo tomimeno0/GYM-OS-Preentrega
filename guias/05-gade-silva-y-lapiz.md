@@ -6,9 +6,9 @@ Edición **50**. Tu responsabilidad principal son los **3 endpoints de la tabla 
 
 | Método y ruta completa | Ruta en el código | Handler real | Acceso |
 | --- | --- | --- | --- |
-| `GET /api/mediciones` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L11) | [listarMediciones](../controllers/mediciones.controller.js#L136) | Sesión requerida |
-| `POST /api/mediciones/initial` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L12) | [actualizarMedicion](../controllers/mediciones.controller.js#L52) | Sesión requerida |
-| `POST /api/mediciones` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L13) | [actualizarMedicion](../controllers/mediciones.controller.js#L52) | Sesión requerida |
+| `GET /api/mediciones` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L11) | [listarMediciones](../controllers/mediciones.controller.js#L204) | Sesión requerida |
+| `POST /api/mediciones/initial` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L12) | [actualizarMedicion](../controllers/mediciones.controller.js#L55) | Sesión requerida |
+| `POST /api/mediciones` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L13) | [actualizarMedicion](../controllers/mediciones.controller.js#L55) | Sesión requerida |
 
 Las URLs de esta tabla incluyen `/api`. En React vas a ver llamadas como `axios.get("/cuenta")`: [App.jsx](../client/src/App.jsx) configura `axios.defaults.baseURL = "/api"`. No existe una ruta extra por cada función interna.
 
@@ -86,18 +86,18 @@ Conocé para qué sirven cuando aparecen en el recorrido de tus rutas. No se asi
 
 | Función auxiliar | Para qué interviene |
 | --- | --- |
-| [cambiarPeso](../controllers/mediciones.controller.js#L4) | Valida el rango de peso. |
+| [cambiarPeso](../controllers/mediciones.controller.js#L3) | Valida el rango de peso. |
 | [cambiarAltura](../controllers/mediciones.controller.js#L14) | Valida altura. |
-| [cambiarPorcMusculo](../controllers/mediciones.controller.js#L24) | Valida porcentaje muscular o dato ausente. |
-| [cambiarPorcGraso](../controllers/mediciones.controller.js#L35) | Valida grasa o dato ausente. |
-| [cambiarNivelActividad](../controllers/mediciones.controller.js#L46) | Valida baja/media/alta. |
+| [cambiarPorcMusculo](../controllers/mediciones.controller.js#L25) | Valida porcentaje muscular o dato ausente. |
+| [cambiarPorcGraso](../controllers/mediciones.controller.js#L37) | Valida grasa o dato ausente. |
+| [cambiarNivelActividad](../controllers/mediciones.controller.js#L49) | Valida baja/media/alta. |
 
 ## Archivos que tenés que ubicar
 
 - [controllers/mediciones.controller.js](../controllers/mediciones.controller.js): handlers y lógica de tus endpoints.
 - [client/src/pages/Medidas.jsx](../client/src/pages/Medidas.jsx): estado, formulario o carga que llama a esas rutas.
 - [models/index.js](../models/index.js): relaciones; seguí desde ahí solo los modelos usados en tus consultas.
-- [auth.controller.js](../controllers/auth.controller.js#L6): antes de un handler privado comprueba cookie, JWT, sesión persistida y cuenta activa; deja el usuario en `req.user`.
+- [auth.controller.js](../controllers/auth.controller.js#L5): antes de un handler privado comprueba cookie, JWT, sesión persistida y cuenta activa; deja el usuario en `req.user`.
 
 ## Lo mínimo común para defender estas rutas
 
@@ -118,3 +118,19 @@ Express y Sequelize guardan el historial físico. React y Axios manejan el formu
 - Si necesitás datos de otra funcionalidad, consultá el índice general. Un `findAll` interno de tu controlador no equivale a llamar por HTTP a otro endpoint.
 
 Consultá el [reparto completo](README.md) y el [alcance](../docs/ALCANCE.md) antes de prometer una ruta de otra entrega.
+
+## Cómo leer el código simplificado
+
+El recorrido sigue siendo pantalla React → ruta Express → controlador → modelo Sequelize → MySQL. No hay una capa de servicios. Las decisiones de negocio usan `if`/`else` y los recorridos usan `for (let i = 0; i < lista.length; i++)`. En cada vuelta, `lista[i]` es el elemento de esa posición; el nombre de la lista no tiene significado especial para JavaScript.
+
+Se quitaron `for...of`, `?.`, `??` y `...` del código de controladores y pantallas. Los controladores ya no usan callbacks de `map`, `filter`, `find` o `some` ni comparadores de `sort`: las búsquedas, validaciones y cálculos están desplegados en bucles. En los formularios se construye una copia con los campos explícitos antes de llamar al setter de React; `slice()` copia una lista y `push()` agrega un elemento. No hay que modificar directamente el estado anterior.
+
+En JSX se mantiene `map` únicamente para dibujar listas de elementos. Por ejemplo, `items.map((rutina) => <...>)` produce un bloque visual por rutina; no guarda datos ni llama a MySQL. `key` identifica cada fila para React. Algunas etiquetas usan un condicional sencillo `condicion ? textoSi : textoNo`; la validación del servidor está escrita con `if`. Las funciones de evento con `=>` y la desestructuración también aparecen en los ejemplos del curso: no son otra arquitectura.
+
+No se afirma que todo el proyecto sea idéntico al repaso. El sistema tiene más funciones que un CRUD de ejemplo. Las protecciones conservadas se explican abajo según tu recorrido. [Criterio y diferencias conservadas](../docs/CRITERIO-DEL-PROFESOR.md).
+
+### Tu recorrido, paso a paso
+
+`actualizarMedicion` toma los datos del body, trata los porcentajes ausentes como `null` con condiciones explícitas y llama a las validaciones de peso, altura y actividad. Un bucle recorre los nombres de los perímetros para aplicar el mismo rango a cada uno. Valida que la fecha sea posterior a la última medición y distingue la carga inicial de las posteriores.
+
+En React, `guardar` construye el body copiando sus campos; recorre los nombres con un `for`, convierte a número lo escrito y deja `null` en campos opcionales vacíos. `mostrarPorcentaje` devuelve un guion solo cuando no hay valor; el cero real no se oculta.

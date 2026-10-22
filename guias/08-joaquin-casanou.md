@@ -6,8 +6,8 @@ Edición **50**. Tu responsabilidad principal son los **2 endpoints de la tabla 
 
 | Método y ruta completa | Ruta en el código | Handler real | Acceso |
 | --- | --- | --- | --- |
-| `GET /api/ejercicios` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L22) | [listarEjercicios](../controllers/rutinas.controller.js#L215) | Sesión requerida |
-| `GET /api/rutinas` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L18) | [listarRutinas](../controllers/rutinas.controller.js#L105) | Sesión requerida |
+| `GET /api/ejercicios` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L22) | [listarEjercicios](../controllers/rutinas.controller.js#L367) | Sesión requerida |
+| `GET /api/rutinas` | [routes/gimnasio.routes.js](../routes/gimnasio.routes.js#L18) | [listarRutinas](../controllers/rutinas.controller.js#L177) | Sesión requerida |
 
 Las URLs de esta tabla incluyen `/api`. En React vas a ver llamadas como `axios.get("/cuenta")`: [App.jsx](../client/src/App.jsx) configura `axios.defaults.baseURL = "/api"`. No existe una ruta extra por cada función interna.
 
@@ -48,7 +48,7 @@ En los endpoints privados, `verificarSesion` corre antes del handler. Las tablas
 
 **Qué recibe.** Sin body.
 
-**Qué ejecuta y consulta.** `Rutina.findAll` por usuario y estado distinto de eliminada, con `include` de `RutinaEjercicio`. Ordena rutinas y ejercicios por día/orden; normaliza el día a número.
+**Qué ejecuta y consulta.** `Rutina.findAll` por usuario y estado distinto de eliminada, con `include` de `RutinaEjercicio`. El `order` de Sequelize pide a MySQL rutinas por fecha y ejercicios por día/posición. Un bucle tradicional convierte cada rutina a JSON y normaliza el día a número; ya no hay comparador `sort`.
 
 **Qué valida o decide.** No hay un `GET /rutinas/:id`: este listado ya trae los detalles y la interfaz muestra cada rutina.
 
@@ -73,7 +73,7 @@ Conocé para qué sirven cuando aparecen en el recorrido de tus rutas. No se asi
 - [controllers/rutinas.controller.js](../controllers/rutinas.controller.js): handlers y lógica de tus endpoints.
 - [client/src/pages/Rutinas.jsx](../client/src/pages/Rutinas.jsx): estado, formulario o carga que llama a esas rutas.
 - [models/index.js](../models/index.js): relaciones; seguí desde ahí solo los modelos usados en tus consultas.
-- [auth.controller.js](../controllers/auth.controller.js#L6): antes de un handler privado comprueba cookie, JWT, sesión persistida y cuenta activa; deja el usuario en `req.user`.
+- [auth.controller.js](../controllers/auth.controller.js#L5): antes de un handler privado comprueba cookie, JWT, sesión persistida y cuenta activa; deja el usuario en `req.user`.
 
 ## Lo mínimo común para defender estas rutas
 
@@ -94,3 +94,19 @@ React y Axios buscan y muestran fichas; Express conecta con el controlador. El c
 - `GET /api/objetivos`: responsable **Paulo López**. Entendé qué recibe y devuelve; no se vuelve a asignar como endpoint tuyo.
 
 Consultá el [reparto completo](README.md) y el [alcance](../docs/ALCANCE.md) antes de prometer una ruta de otra entrega.
+
+## Cómo leer el código simplificado
+
+El recorrido sigue siendo pantalla React → ruta Express → controlador → modelo Sequelize → MySQL. No hay una capa de servicios. Las decisiones de negocio usan `if`/`else` y los recorridos usan `for (let i = 0; i < lista.length; i++)`. En cada vuelta, `lista[i]` es el elemento de esa posición; el nombre de la lista no tiene significado especial para JavaScript.
+
+Se quitaron `for...of`, `?.`, `??` y `...` del código de controladores y pantallas. Los controladores ya no usan callbacks de `map`, `filter`, `find` o `some` ni comparadores de `sort`: las búsquedas, validaciones y cálculos están desplegados en bucles. En los formularios se construye una copia con los campos explícitos antes de llamar al setter de React; `slice()` copia una lista y `push()` agrega un elemento. No hay que modificar directamente el estado anterior.
+
+En JSX se mantiene `map` únicamente para dibujar listas de elementos. Por ejemplo, `items.map((rutina) => <...>)` produce un bloque visual por rutina; no guarda datos ni llama a MySQL. `key` identifica cada fila para React. Algunas etiquetas usan un condicional sencillo `condicion ? textoSi : textoNo`; la validación del servidor está escrita con `if`. Las funciones de evento con `=>` y la desestructuración también aparecen en los ejemplos del curso: no son otra arquitectura.
+
+No se afirma que todo el proyecto sea idéntico al repaso. El sistema tiene más funciones que un CRUD de ejemplo. Las protecciones conservadas se explican abajo según tu recorrido. [Criterio y diferencias conservadas](../docs/CRITERIO-DEL-PROFESOR.md).
+
+### Tu recorrido, paso a paso
+
+`listarEjercicios` recorre el catálogo local y agrega los que coinciden con texto y grupo. La paginación usa `slice`. El `sort()` restante ordena nombres de grupos alfabéticamente sin callback ni comparador numérico. No consulta una API externa.
+
+`listarRutinas` pide el orden por fecha/día/posición directamente a MySQL; después recorre registros para convertirlos a JSON y normalizar el día.

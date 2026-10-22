@@ -57,3 +57,7 @@ Cada endpoint tiene un solo responsable principal. Que dos rutas usen el mismo h
 La distribución busca continuidad funcional y carga razonable, no nueve cantidades iguales de rutas. Las rutas que calculan progreso, guardan varios detalles o llaman a Cohere requieren más explicación que un listado simple.
 
 En el 50, Valentín se ocupa de escribir rutinas y Joaquín de consultarlas y del catálogo. Mateo estudia el único endpoint de progreso, que reúne cálculos y gráficos. No se asignan nutrición ni generación de planes IA porque no existen en esta entrega.
+
+## Lectura de la implementación
+
+Cada guía incluye una sección sobre la lógica simplificada y las diferencias que se conservan frente al repaso. El reparto y el alcance no cambiaron. Consultá el [criterio del profesor y las protecciones conservadas](../docs/CRITERIO-DEL-PROFESOR.md).
