@@ -1,83 +1,50 @@
-# Gade Silva y Lápiz: Mediciones y perfil físico
+# Gade Silva y Lápiz · Mediciones y perfil físico
 
-Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
+Responsabilidad de estudio y revisión de la edición 50; no es una declaración de autoría.
 
-## Mapa visual para ubicarte
-
-Pensá las medidas como una línea de fotos en el tiempo: cada carga agrega un punto nuevo. Mateo usa esos puntos para dibujar la evolución.
+## Mapa mental
 
 ```mermaid
 flowchart TD
-    A["👤 Usuario<br/>Peso, altura, fecha y datos opcionales"]
-    B["🖥️ Fitness.jsx<br/>MeasurementForm<br/>Carga inicial o nueva medición"]
-    C["🚪 fitness.routes.js + measurementSchema<br/>POST /api/v1/measurements/initial<br/>o POST /api/v1/measurements<br/>Zod valida campos y rangos"]
-    D["🧭 fitness.controller.js<br/>addMeasurement()<br/>Inicial única o perfil previo<br/>Fecha posterior y no futura"]
-    E[("💾 MySQL · Sequelize<br/>mediciones_fisicas<br/>Inserta una nueva fila<br/>No pisa las mediciones anteriores")]
-    F["🔎 latestMeasurement()<br/>Obtiene la más reciente"]
-    G["📚 listMeasurements()<br/>Historial propio ordenado y paginado"]
-    H["🖥️ Progreso<br/>Se ve la medición nueva<br/>y siguen existiendo las anteriores"]
-    X["⛔ Error controlado<br/>Rangos, fecha futura<br/>o carga inicial duplicada"]
-    A --> B --> C --> D --> E
-    E --> F --> H
-    E --> G --> H
-    C -->|Formato inválido| X
-    D -->|Regla incumplida| X
+  N0["Formulario físico"]
+  N1["Validar medidas"]
+  N2["Comprobar medición inicial"]
+  N3["Guardar nueva fila"]
+  N4["Consultar historial"]
+  N0 --> N1
+  N1 --> N2
+  N2 --> N3
+  N3 --> N4
 ```
 
-Tu bloque registra y conserva medidas. El perfil corporal actual sale de la última medición; los datos personales de la cuenta pertenecen al bloque de Simón.
+## Archivos y funciones
 
-## Tu funcionalidad
+Pantalla: [Medidas.jsx](../client/src/pages/Medidas.jsx). Backend: [controllers/mediciones.controller.js](../controllers/mediciones.controller.js). Las rutas están en [usuarios.routes.js](../routes/usuarios.routes.js) y [gimnasio.routes.js](../routes/gimnasio.routes.js).
 
-**Casos:** CU007, CU008. **Pantallas:** `Carga de medidas dentro de /progreso`.
+| Función | Qué hace y qué tenés que poder explicar |
+| --- | --- |
+| [actualizarMedicion](../controllers/mediciones.controller.js#L52) | Agrega una medición inicial o posterior, sin sobrescribir las anteriores; valida porcentajes, fecha y perímetros. |
+| [listarMediciones](../controllers/mediciones.controller.js#L136) | Consulta el historial propio del más reciente al más antiguo. |
+| [cambiarPeso](../controllers/mediciones.controller.js#L4) | Valida peso entre 20 y 400 kg. |
+| [cambiarAltura](../controllers/mediciones.controller.js#L14) | Valida altura entre 80 y 250 cm. |
+| [cambiarPorcMusculo](../controllers/mediciones.controller.js#L24) | Acepta un porcentaje muscular válido o ausencia del dato. |
+| [cambiarPorcGraso](../controllers/mediciones.controller.js#L35) | Acepta un porcentaje de grasa válido o ausencia del dato. |
+| [cambiarNivelActividad](../controllers/mediciones.controller.js#L46) | Limita actividad a baja, media o alta. |
 
-Mateo explica la visualización del historial; vos la carga y persistencia de medidas. Los datos personales de la cuenta corresponden a Simón.
+## Librerías
 
-## Archivos que tenés que ubicar
+React y Axios cargan el formulario. Sequelize agrega filas de MedicionFisica. Se mantienen los registros anteriores para que el panel pueda compararlos.
 
-- [client/src/pages/Fitness.jsx](../client/src/pages/Fitness.jsx).
-- [controllers/fitness.controller.js](../controllers/fitness.controller.js).
-- [shared/schemas.js](../shared/schemas.js).
-- [models/MedicionFisica.model.js](../models/MedicionFisica.model.js).
+## Qué entender
 
-## Qué hace cada función importante
+Peso, altura, porcentajes y perímetros tienen unidades y rangos. La primera medición es única. Una actualización agrega historial; no reemplaza la anterior. Un dato ausente es null, no cero.
 
-| Función                                                       | Para qué sirve                                                                             |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [MeasurementForm](../client/src/pages/Fitness.jsx#L196)       | Distingue carga inicial de nueva medición; convierte números y conserva campos opcionales. |
-| [addMeasurement](../controllers/fitness.controller.js#L104)   | Ejecuta el caso UML de carga/actualización, valida fecha y guarda una nueva fila.          |
-| [latestMeasurement](../controllers/fitness.controller.js#L24) | Busca la medición más reciente, o anterior a una fecha cuando se necesita comparación.     |
-| [listMeasurements](../controllers/fitness.controller.js#L43)  | Lista historial propio paginado y ordenado.                                                |
-| [measurementSchema](../shared/schemas.js#L47)                 | Limita peso, altura y porcentajes; impide que grasa y músculo sumen más de 100.            |
+Ubicá useState, useEffect cuando se use, los eventos del formulario y las llamadas Axios. Para cada función explicá entradas, validación, consulta y respuesta; no hace falta memorizar palabra por palabra.
 
-Los enlaces llevan a la declaración real. Entendé qué recibe, qué valida, qué devuelve y qué puede fallar; no hace falta repetir cada palabra del código. Las operaciones de soporte compartidas se explican en [el recorrido común](README.md).
+## Recorrido de defensa
 
-## Recorrido que tenés que poder explicar
+Cargá una primera medición y luego otra con peso distinto. Mostrá ambas filas y probá un dato fuera de rango.
 
-Peso/altura y opcionales -> formulario -> validación Zod -> medición nueva con fecha -> historial anterior intacto. No se sobreescribe una medición vieja.
+## Base común
 
-**Datos afectados o consultados:** mediciones_fisicas y bitacora. La pantalla no escribe SQL directamente: llama a Express y Sequelize se ocupa de las consultas. Las escrituras conservan autorización, transacción, bitácora e integridad.
-
-## Librerías de tu recorrido
-
-React y React Router administran pantallas y acciones. Express recibe solicitudes; Zod valida contratos; Sequelize/mysql2 persisten o consultan MySQL. En cuentas se usan crypto de Node y Nodemailer para seguridad y recuperación; el correo de desarrollo es un archivo, no un envío real. Estudiá las librerías que realmente intervienen en tu función, no las dependencias completas.
-
-## Demostración para exponer
-
-1. Cargar el perfil físico inicial.
-2. Guardar una medición posterior con un peso distinto.
-3. Rechazar valores fuera de rango y fechas futuras.
-4. Mostrar que ambas filas permanecen en el historial.
-
-## Preguntas que deberías poder responder
-
-- ¿Cuál es la diferencia entre esta pantalla y su ruta de API?
-- ¿Qué datos entran, qué error se valida y qué respuesta recibe React?
-- ¿Qué queda guardado y cómo se comprueba después de recargar?
-- ¿Cómo se evita acceder a registros ajenos?
-- ¿Qué operación se cancela sin cambiar la base?
-
-## Límites de la preentrega
-
-No hay nutrición, administración ni generación/adaptación IA de planes en esta copia. El chat sí usa Cohere real si la clave privada y su cuota están disponibles. La base conserva tablas del DER futuro, pero tener una tabla o un método UML declarado no equivale a una funcionalidad terminada. Consultá [alcance](../docs/ALCANCE.md) y [verificación](../docs/VERIFICACION.md).
-
-Antes de exponer, registrá tus revisiones/aportes efectivos en [REPARTO.md](../REPARTO.md). No atribuyas cambios que no realizaste.
+Pantalla → ruta → controlador → modelo → MySQL. Las relaciones están en [models/index.js](../models/index.js). La confirmación está en [Confirmar.jsx](../client/src/components/Confirmar.jsx). Consultá el [alcance](../docs/ALCANCE.md). Vite solo inicia o compila React; no es una función del gimnasio ni hay que estudiar sus mecanismos internos.

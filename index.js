@@ -1,105 +1,69 @@
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import helmet from 'helmet';
-import cors from 'cors';
-import { ZodError } from 'zod';
-import path from 'node:path';
-import { existsSync } from 'node:fs';
-import { env, rootDir } from './config/env.js';
-import { sequelize } from './config/db.js';
-import { AppError } from './controllers/errors.controller.js';
-import { accountRouter } from './routes/accounts.routes.js';
-import { fitnessRouter } from './routes/fitness.routes.js';
-
-const server = express();
-server.disable('x-powered-by');
-server.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        'img-src': ["'self'", 'data:'],
-        'style-src': ["'self'", "'unsafe-inline'"],
-        'connect-src': ["'self'"],
-      },
-    },
-  }),
-);
-server.use(cors({ origin: env.origin, credentials: true }));
-server.use(express.json({ limit: '256kb' }));
-server.use(cookieParser());
-server.use('/api', (req, res, next) => {
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-    if (
-      req.get('X-GymOS-Client') !== 'web' ||
-      (req.get('Origin') && req.get('Origin') !== env.origin)
-    )
-      return next(new AppError(403, 'CSRF_REJECTED', 'Origen de solicitud no autorizado.'));
-  }
+require("dotenv").config({ quiet: true });
+const express = require("express");
+const cookieParser = require("cookie-parser");
+const path = require("path");
+const fs = require("fs");
+const { sequelize } = require("./config/db");
+require("./models");
+const app = express();
+app.disable("x-powered-by");
+app.use(express.json({ limit: "200kb" }));
+app.use(cookieParser());
+app.use("/api", (req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
   next();
 });
-server.get('/api/health', async (req, res) => {
-  await sequelize.authenticate();
-  res.json({ status: 'ok', database: 'mysql' });
+app.get("/api/salud", async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.json({ estado: "ok", version: "50" });
+  } catch (error) {
+    res.status(503).json({ message: "Base de datos no disponible." });
+  }
 });
-server.use('/api/v1', accountRouter);
-server.use('/api/v1', fitnessRouter);
-server.use('/api', (req, res) =>
-  res.status(404).json({ error: { code: 'NOT_FOUND', message: 'La ruta solicitada no existe.' } }),
+app.use("/api", require("./routes/usuarios.routes"));
+app.use("/api", require("./routes/gimnasio.routes"));
+app.use("/api", (req, res) =>
+  res.status(404).json({ message: "Ruta no encontrada." }),
 );
-const dist = path.join(rootDir, 'client/dist');
-if (existsSync(dist)) {
-  server.use(express.static(dist));
-  server.get('/{*path}', (req, res) => res.sendFile(path.join(dist, 'index.html')));
-}
-server.use((err, req, res, next) => {
-  if (err instanceof ZodError)
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Revisá los datos ingresados.',
-        details: err.issues.map((issue) => ({
-          field: issue.path.join('.'),
-          message: issue.message,
-        })),
-      },
-    });
-  if (err instanceof AppError)
-    return res.status(err.status).json({
-      error: {
-        code: err.code,
-        message: err.message,
-        ...(err.details ? { details: err.details } : {}),
-      },
-    });
-  if (err.name === 'SequelizeUniqueConstraintError')
-    return res
-      .status(409)
-      .json({ error: { code: 'CONFLICT', message: 'Ya existe un registro con esos datos.' } });
-  if (err.type === 'entity.parse.failed')
-    return res
-      .status(400)
-      .json({ error: { code: 'INVALID_JSON', message: 'El cuerpo JSON no es válido.' } });
-  if (err.type === 'entity.too.large')
-    return res.status(413).json({
-      error: { code: 'PAYLOAD_TOO_LARGE', message: 'La solicitud supera el tamaño permitido.' },
-    });
-  console.error(`[api] ${err.name || 'Error'} en ${req.method} ${req.path}`);
-  res.status(500).json({
-    error: {
-      code: 'INTERNAL_ERROR',
-      message: 'No se pudo completar la operación. Intentá nuevamente.',
-    },
-  });
-});
-
-await sequelize.authenticate();
-const listener = server.listen(env.port, '127.0.0.1', () =>
-  console.log(`GYM-OS API: http://localhost:${env.port}`),
-);
-for (const signal of ['SIGINT', 'SIGTERM'])
-  process.on(signal, () =>
-    listener.close(async () => {
-      await sequelize.close();
-      process.exit(0);
-    }),
+const dist = path.join(__dirname, "client", "dist");
+if (fs.existsSync(path.join(dist, "index.html"))) {
+  app.use(express.static(dist));
+  app.get("/{*ruta}", (req, res) =>
+    res.sendFile(path.join(dist, "index.html")),
   );
+}
+app.use((error, req, res, next) => {
+  if (res.headersSent) return next(error);
+  res
+    .status(
+      error.type === "entity.parse.failed"
+        ? 400
+        : error.type === "entity.too.large"
+          ? 413
+          : 500,
+    )
+    .json({ message: "No se pudo procesar la solicitud." });
+});
+async function iniciar() {
+  if (
+    !process.env.JWT_SECRET ||
+    process.env.JWT_SECRET.length < 32 ||
+    !/^[a-f0-9]{64}$/i.test(process.env.ENCRYPTION_KEY || "")
+  )
+    throw new Error("Configurá JWT_SECRET y ENCRYPTION_KEY en .env.");
+  await sequelize.authenticate();
+  const puerto = Number(process.env.PORT || 5174);
+  app.listen(puerto, "::1", () =>
+    console.log("GYM-OS 50: http://localhost:" + puerto),
+  );
+  app.listen(puerto, "127.0.0.1");
+}
+if (require.main === module)
+  iniciar().catch(() => {
+    console.error(
+      "No se pudo iniciar. Revisá .env, MySQL y la inicialización de la base.",
+    );
+    process.exitCode = 1;
+  });
+module.exports = app;

@@ -1,95 +1,51 @@
-# Tomás Menossi: Chat con inteligencia artificial
+# Tomás Menossi · Chat con Cohere
 
-Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
+Responsabilidad de estudio y revisión de la edición 50; no es una declaración de autoría.
 
-## Mapa visual para ubicarte
-
-Tu parte es el chat con IA de la preentrega. Imaginalo como un recorrido: la pantalla recibe, el servidor organiza, Cohere responde y la base guarda.
+## Mapa mental
 
 ```mermaid
 flowchart TD
-    A["👤 Usuario<br/>Escribe una consulta"]
-    B["🖥️ PANTALLA · React<br/>Assistant.jsx<br/>Muestra el chat y envía el mensaje"]
-    C["🚪 ENTRADA · Express<br/>fitness.routes.js<br/>POST /api/v1/ai/chat<br/>Valida los datos recibidos"]
-    D["🧭 COORDINADOR<br/>ai.controller.js → chat()<br/>Comprueba consentimiento y conversación propia"]
-    E["📦 PREPARA EL CONTEXTO<br/>chatInstructions() + historial<br/>Reglas + últimos 10 mensajes + consulta"]
-    F["📡 CONEXIÓN CON COHERE<br/>cohere.controller.js → cohereChat()<br/>Envía la consulta usando la clave privada"]
-    G["🧠 COHERE · Servicio externo<br/>El modelo genera la respuesta"]
-    H["🔎 REVISA LA RESPUESTA<br/>structuredChat()<br/>Valida el formato JSON<br/>chat() aplica el límite de temas"]
-    I[("💾 MEMORIA · MySQL<br/>Sequelize guarda juntos<br/>la pregunta y la respuesta<br/>Tablas: conversaciones y mensajes")]
-    J["💬 PANTALLA · React<br/>Muestra la respuesta<br/>y actualiza el historial"]
-    X["⛔ Error controlado<br/>La pantalla explica el problema"]
-
-    A --> B --> C --> D
-    D -->|"Permisos correctos"| E
-    D -->|"Sin consentimiento o acceso"| X
-    E --> F --> G --> H
-    H -->|"Respuesta válida"| I --> J
-    F -->|"Falla de conexión o proveedor"| X
-    H -->|"Formato inválido tras reintentar"| X
-    I -.->|"Aporta el historial en la próxima consulta"| E
+  N0["Pantalla Asistente"]
+  N1["Modo y consulta"]
+  N2["Controlador y consentimiento"]
+  N3["Cohere por API"]
+  N4["Validar respuesta"]
+  N5["Guardar conversación"]
+  N0 --> N1
+  N1 --> N2
+  N2 --> N3
+  N3 --> N4
+  N4 --> N5
 ```
 
-Assistant.jsx es la cara; ai.controller.js coordina; cohere.controller.js conecta con el proveedor. La clave queda en el servidor y MySQL conserva el historial. aiStatus() comprueba disponibilidad por separado; no genera respuestas. La validación del formato no garantiza que el contenido del modelo sea correcto.
+## Archivos y funciones
 
-## Tu funcionalidad
+Pantalla: [Asistente.jsx](../client/src/pages/Asistente.jsx). Backend: [controllers/ia.controller.js](../controllers/ia.controller.js). Las rutas están en [usuarios.routes.js](../routes/usuarios.routes.js) y [gimnasio.routes.js](../routes/gimnasio.routes.js).
 
-**Casos:** CU031. **Pantallas:** `/asistente y consentimiento en /me`.
+| Función | Qué hace y qué tenés que poder explicar |
+| --- | --- |
+| [estadoIA](../controllers/ia.controller.js#L168) | Informa si hay clave configurada; no asegura que el proveedor esté disponible. |
+| [responderConsulta](../controllers/ia.controller.js#L51) | Comprueba consentimiento, modo y propiedad de la conversación; obtiene contexto y guarda los dos mensajes. |
+| [responderconsulta](../controllers/ia.controller.js#L31) | Construye la instrucción de entrenador/soporte y valida el texto JSON devuelto por Cohere. |
+| [generarConIA](../controllers/ia.controller.js#L4) | Hace una llamada HTTP al proveedor con la clave privada y un límite de 45 segundos; no reintenta. |
+| [listarConversaciones](../controllers/ia.controller.js#L135) | Lista únicamente las conversaciones del usuario conectado. |
+| [verConversacion](../controllers/ia.controller.js#L149) | Comprueba el dueño antes de devolver sus mensajes. |
 
-Tu bloque es IA y no se suma otra funcionalidad. No necesitás explicar entrenamiento de modelos ni todo el sistema. Esta versión solo conversa: no genera/adapta rutinas o dietas.
+## Librerías
 
-## Archivos que tenés que ubicar
+React maneja consulta, modo, conversación y estado de espera. Axios llama al backend. fetch hace la llamada externa; AbortSignal corta la espera; Sequelize conserva planes y mensajes. La clave solo vive en .env del servidor.
 
-- [client/src/pages/Assistant.jsx](../client/src/pages/Assistant.jsx).
-- [controllers/ai.controller.js](../controllers/ai.controller.js).
-- [controllers/cohere.controller.js](../controllers/cohere.controller.js).
-- [config/env.js](../config/env.js).
-- [routes/fitness.routes.js](../routes/fitness.routes.js).
+## Qué entender
 
-## Qué hace cada función importante
+La IA es externa y real. Entendé system/user/assistant, JSON, historial de diez mensajes, consentimiento, clave privada y timeout. El chat solo conversa: no genera ni modifica planes, ni ejecuta acciones sobre la cuenta.
 
-| Función                                                  | Para qué sirve                                                                                                           |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| [Chat](../client/src/pages/Assistant.jsx#L7)             | Envía consultas, bloquea cambios mientras espera y abre conversaciones anteriores.                                       |
-| [chatInstructions](../controllers/ai.controller.js#L27)  | Define alcance, trato de saludos y continuaciones, funciones reales de esta versión y límites de seguridad.              |
-| [chat](../controllers/ai.controller.js#L122)             | Comprueba consentimiento y propiedad de la conversación; prepara historial y guarda pregunta/respuesta juntas.           |
-| [structuredChat](../controllers/ai.controller.js#L54)    | Interpreta JSON y valida relacionado/respuesta; permite repetir una salida inválida sin guardado parcial.                |
-| [cohereChat](../controllers/cohere.controller.js#L6)     | Hace HTTPS a Cohere con clave privada, timeout y salida estructurada; rechaza respuesta vacía/truncada.                  |
-| [aiStatus](../controllers/ai.controller.js#L237)         | Comprueba el proveedor real y cachea resultados correctos cinco minutos y fallos quince segundos, sin devolver la clave. |
-| [listConversations](../controllers/ai.controller.js#L96) | Lista exclusivamente conversaciones del usuario.                                                                         |
-| [getConversation](../controllers/ai.controller.js#L107)  | Recupera cabecera y mensajes propios ordenados por fecha.                                                                |
-| [ensureAiConsent](../controllers/ai.controller.js#L87)   | Impide compartir una consulta con Cohere sin consentimiento explícito.                                                   |
+Ubicá useState, useEffect cuando se use, los eventos del formulario y las llamadas Axios. Para cada función explicá entradas, validación, consulta y respuesta; no hace falta memorizar palabra por palabra.
 
-Los enlaces llevan a la declaración real. Entendé qué recibe, qué valida, qué devuelve y qué puede fallar; no hace falta repetir cada palabra del código. Las operaciones de soporte compartidas se explican en [el recorrido común](README.md).
+## Recorrido de defensa
 
-## Recorrido que tenés que poder explicar
+En Mi cuenta activá consentimiento. En Asistente elegí Soporte, preguntá cómo registrar un entrenamiento y hacé un seguimiento. Mostrá que se conserva la conversación y que no hay botones para generar planes.
 
-Usuario habilita consentimiento -> consulta -> POST /ai/chat -> Cohere Command A -> JSON validado -> transacción MySQL -> pantalla e historial. La clave no viaja a React.
+## Base común
 
-**Datos afectados o consultados:** usuarios.consentimiento_ia, conversaciones, mensajes y bitacora. La pantalla no escribe SQL directamente: llama a Express y Sequelize se ocupa de las consultas. Las escrituras conservan autorización, transacción, bitácora e integridad.
-
-## Librerías de tu recorrido
-
-React y React Router para pantalla e historial; fetch y AbortController en Node para HTTPS/timeout; Express para las rutas; Sequelize/mysql2 para mensajes en MySQL. Cohere se consume por API; no corre un modelo local. JSON estructurado y validación protegen la persistencia.
-
-## Demostración para exponer
-
-1. Mostrar que sin consentimiento no se puede enviar.
-2. Activarlo en Mi cuenta y empezar con «hola». Continuar con una consulta de entrenamiento o una sugerencia de la pantalla.
-3. Continuar la conversación y recargar para abrir el historial.
-4. Probar «dale» o «gracias»: el historial permite entender mensajes breves.
-5. Explicar la negativa fuera de alcance y qué pasa si Cohere no responde. Comprobar conexión vuelve a consultar el estado; el servidor puede devolver su caché.
-
-## Preguntas que deberías poder responder
-
-- ¿Cuál es la diferencia entre esta pantalla y su ruta de API?
-- ¿Qué datos entran, qué error se valida y qué respuesta recibe React?
-- ¿Qué queda guardado y cómo se comprueba después de recargar?
-- ¿Cómo se evita acceder a registros ajenos?
-- ¿Qué operación se cancela sin cambiar la base?
-
-## Límites de la preentrega
-
-No hay nutrición, administración ni generación/adaptación IA de planes en esta copia. El chat sí usa Cohere real si la clave privada y su cuota están disponibles. La base conserva tablas del DER futuro, pero tener una tabla o un método UML declarado no equivale a una funcionalidad terminada. Consultá [alcance](../docs/ALCANCE.md) y [verificación](../docs/VERIFICACION.md).
-
-Antes de exponer, registrá tus revisiones/aportes efectivos en [REPARTO.md](../REPARTO.md). No atribuyas cambios que no realizaste.
+Pantalla → ruta → controlador → modelo → MySQL. Las relaciones están en [models/index.js](../models/index.js). La confirmación está en [Confirmar.jsx](../client/src/components/Confirmar.jsx). Consultá el [alcance](../docs/ALCANCE.md). Vite solo inicia o compila React; no es una función del gimnasio ni hay que estudiar sus mecanismos internos.

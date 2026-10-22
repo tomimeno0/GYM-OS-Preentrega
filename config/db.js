@@ -1,18 +1,18 @@
-import { Sequelize } from 'sequelize';
-import { env } from './env.js';
+require("dotenv").config({ quiet: true });
+const { Sequelize } = require("sequelize");
 
-export const sequelize = new Sequelize(env.db.name, env.db.user, env.db.password, {
-  dialect: 'mysql',
-  host: env.db.host,
-  port: env.db.port,
-  logging: false,
-  timezone: '+00:00',
-  dialectOptions: { decimalNumbers: true, dateStrings: false },
-  define: {
-    timestamps: false,
-    freezeTableName: true,
-    charset: 'utf8mb4',
-    collate: 'utf8mb4_unicode_ci',
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
+  {
+    host: process.env.DB_HOST || "127.0.0.1",
+    port: Number(process.env.DB_PORT || 3310),
+    dialect: "mysql",
+    logging: false,
+    timezone: "+00:00",
+    dialectOptions: { decimalNumbers: true },
   },
-  pool: { min: 0, max: 8, idle: 10000 },
-});
+);
+
+module.exports = { sequelize };

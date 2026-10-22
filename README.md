@@ -1,42 +1,49 @@
-# GYM-OS · Preentrega
+# GYM-OS · Preentrega 50
 
-Versión parcial de estudio y demostración, derivada del [proyecto GYM-OS](https://github.com/tomimeno0/GYM-OS) (base `1e91986`) con asistencia de Codex. Incluye 20 de los 39 casos nominales, aproximadamente la mitad; el recorte y sus límites se detallan en [ALCANCE](docs/ALCANCE.md). No es el sistema final ni una historia de autorías individuales.
+Proyecto educativo en JavaScript con React, Express, Sequelize y MySQL. Esta copia reorganiza la aplicación según los ejemplos de `REPASO COMPLETO.rar`: rutas → controladores → modelos, con consultas directas y funciones visibles.
 
-JavaScript, React, Express, Sequelize y MySQL 8.4. Misma estructura por `config`, `routes`, `controllers`, `models`, `shared` y `client`. Nueve funcionalidades repartidas en [REPARTO.md](REPARTO.md), con [una guía por integrante](guias/README.md). Tomás se ocupa del chat IA.
+Esta reescritura no modifica el proyecto completo ni la edición 75. La base anterior del 50 se preserva aparte; la nueva usa cuentas nuevas. El nombre identifica el corte de entrega: incluye 19 de los 39 casos nominales (48,72 %), no un 50 % medido por dificultad, tiempo ni autoría. Ver [alcance y límites](docs/ALCANCE.md).
 
-## Funciones
+## Cómo está organizado
 
-Cuentas y recuperación, perfil propio y eliminación, medidas históricas, objetivos, panel/progreso, rutinas manuales, catálogo textual de 1324 ejercicios, entrenamientos e historial y chat Cohere con consentimiento.
+```text
+index.js                 servidor Express
+config/db.js             conexión MySQL
+config/inicializar.js    creación inicial de tablas y cuenta demo
+models/                  tablas y relaciones Sequelize
+controllers/             lógica de cada función
+routes/                  dirección HTTP → función del controlador
+client/src/pages/        pantallas React con estado y Axios
+client/src/components/   confirmación visible de acciones
+models/exercises/        catálogo textual de ejercicios y licencia
+sql/estructura.sql       esquema MySQL, sin usuarios ni datos personales
+```
 
-No incluye dietas, consumo/macros, administración ni generación/adaptación de planes por IA. Se retiraron sus pantallas y endpoints. El chat no genera planes persistidos.
+Cada pantalla usa `useState`, `useEffect`, formularios y Axios. No hay carpeta de servicios, clases de despacho, validadores genéricos ni reintentos automáticos de IA. Se retiraron los temas 45, 46 y 47. Las contraseñas siguen protegidas; simplificar no significa publicar credenciales ni permitir consultar cuentas ajenas. [Criterio del profesor](docs/CRITERIO-DEL-PROFESOR.md).
 
 ## Ejecutar
 
-Requiere Node >=22.12, Docker/Compose y puertos libres 5174/3002/3309. No se necesita instalar un modelo local.
+Requiere Node.js 22.12 o posterior compatible con Vite, npm y MySQL 8.4. Docker es opcional; `compose.yaml` inicia una base separada en el puerto 3311.
 
-```sh
-npm ci
-npm run setup
-docker compose up -d mysql
-npm run db:migrate
-npm run db:seed
-npm run dev
-```
+1. Copiar `.env.example` a `.env`. Completar los valores `CAMBIAR`. Usar una contraseña de demo de al menos 10 caracteres y como máximo 72 bytes; `JWT_SECRET` debe tener al menos 32 caracteres. `ENCRYPTION_KEY` debe ser una clave hexadecimal aleatoria de 64 caracteres. No publicar ese archivo.
+2. Si usás Docker: `docker compose up -d`. Si tenés el ejecutable independiente, `docker-compose up -d`. En esta Mac el contexto es `colima-gymos`; usar `DOCKER_CONTEXT=colima-gymos docker-compose up -d` con Colima ya iniciado.
+3. `npm ci` y `npm ci --prefix client`.
+4. `npm run db:iniciar`: crea tablas faltantes y el rol Cliente. No borra tablas ni modifica su estructura. Si se definió `DEMO_PASSWORD`, crea `demo@gymos.local` solo si no existe; nunca restablece una cuenta existente.
+5. `npm run build` y `npm start`.
+6. Abrir **http://localhost:5174**. El servidor escucha únicamente en las dos direcciones locales IPv4/IPv6; no se publica en la red.
 
-En esta Mac con Colima: `colima start --profile gymos` y `DOCKER_CONTEXT=colima-gymos docker-compose up -d mysql` en lugar de `docker compose`. La base debe estar saludable antes de migrar. Los comandos no reutilizan el volumen del final.
+Para editar React con recarga: mantener el servidor y ejecutar `npm run dev --prefix client`; abre http://localhost:5178 con el proxy `/api`. Después de modificar el backend hay que reiniciarlo, o usar `npm run dev` en lugar de `npm start`.
 
-Abrir http://localhost:5174. API http://localhost:3002; MySQL 127.0.0.1:3309. Registrate: no se publican contraseñas de prueba. Cada instalación genera sus propios secretos; `npm run setup` nunca reemplaza `.env`.
+Para usar una instalación propia de MySQL, crear una base vacía y un usuario con permisos solamente sobre esa base; configurar `DB_*` y ejecutar el paso de inicialización. `sql/estructura.sql` permite inspeccionar el esquema; no hace falta importarlo además de inicializar.
 
-Para IA, configurar `COHERE_API_KEY` en `.env`, mantener `AI_MOCK=false` y activar consentimiento desde Mi cuenta. El modelo por defecto es `command-a-03-2025`. La clave de prueba depende de su cuota. No compartir `.env` ni subirlo a Git. El correo de recuperación de desarrollo queda en `.local/mail/`; no llega a un buzón real.
+## IA
 
-## Comprobar y entregar
+Cohere se llama desde el backend, con clave privada en .env y consentimiento en Mi cuenta. No hay modelo local ni respuesta simulada. Una llamada puede fallar y se informa sin reintentar automáticamente. [Referencia de la API](https://docs.cohere.com/v2/reference/chat).
 
-`npm run check` revisa formato y compila. `npm audit` revisa avisos conocidos de dependencias. La comprobación funcional y visual se describe en [VERIFICACION](docs/VERIFICACION.md); los scripts temporales y credenciales no se versionan. No hay suites de tests ni comentarios de código añadidos.
+## Estudiar y revisar
 
-`npm run build` prepara React y `npm start` sirve el build desde la API. En ese modo configurá `APP_ORIGIN=http://localhost:3002` y reiniciá. Desarrollo habitual usa 5174. Producción requiere HTTPS y operación propia; este repositorio no certifica ese despliegue.
+[Las nueve guías](guias/README.md) contienen archivos, funciones, diagramas y un recorrido de defensa por funcionalidad. Son responsabilidades de estudio y revisión; no certifican que cada integrante haya escrito el código.
 
-## Datos y seguridad
+[Mapa de operaciones UML](docs/METODOS-UML.md) · [Plan de reescritura](docs/PLAN.md) · [Verificación y límites](docs/VERIFICACION.md)
 
-Base y volumen propios: `gym_os_preentrega`, proyecto Compose `gym-os-preentrega`. No usar `down -v` para apagar: borra datos. `Ctrl+C` detiene API/Vite; `docker-compose --context colima-gymos stop` detiene esta base sin borrar el volumen.
-
-Se conservan cifrado de teléfono, hash de contraseñas, cookie HttpOnly separada, validación de origen, aislamiento por usuario, bitácora e integridad. Las tablas futuras del DER no se cuentan como funciones completas. El catálogo textual tiene atribución y licencia en `models/exercises/`; no se incluyen imágenes/GIF con otra licencia. Los planes y orientación no sustituyen atención profesional.
+Se conserva la licencia y procedencia del catálogo en `models/exercises/`. No se incluyen fotos/GIF del conjunto original ni los documentos privados del curso. No hay suites de tests ni comentarios explicativos en el código entregado; la explicación está en los MD.

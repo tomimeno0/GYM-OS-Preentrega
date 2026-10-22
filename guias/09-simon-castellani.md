@@ -1,89 +1,51 @@
-# Simón Castellani: Mi cuenta y datos personales
+# Simón Castellani · Mi cuenta, privacidad y eliminación
 
-Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
+Responsabilidad de estudio y revisión de la edición 50; no es una declaración de autoría.
 
-## Mapa visual para ubicarte
-
-Mi cuenta modifica a la persona que inició sesión. Editar el perfil y eliminar la cuenta siguen caminos distintos; el borrado pide contraseña y confirmación.
+## Mapa mental
 
 ```mermaid
 flowchart TD
-    A["👤 Usuario autenticado<br/>Abre Mi cuenta"]
-    B["🖥️ Account.jsx<br/>Account() carga datos y formulario"]
-    C{"¿Qué quiere hacer?"}
-    D["✏️ EDITAR · PATCH /api/v1/me<br/>accounts.routes.js valida campos"]
-    E["🧭 accounts.controller.js<br/>updateProfile()<br/>Guarda campos permitidos<br/>encrypt() cifra el teléfono"]
-    F[("💾 MySQL · Sequelize<br/>usuarios + bitacora<br/>Incluye consentimiento_ia")]
-    G["🖥️ publicUser()<br/>Devuelve datos permitidos<br/>decrypt() recupera el teléfono<br/>No devuelve hashes ni claves"]
-    H["🗑️ ELIMINAR · DELETE /api/v1/me<br/>Confirmación + contraseña actual"]
-    I["🔎 deleteAccount() → deleteUserData()<br/>Comprueba contraseña<br/>Borra datos dependientes en transacción<br/>Conserva bitácora sin identificar la cuenta"]
-    J["🚪 Cuenta eliminada<br/>Cookie borrada y acceso revocado"]
-    K["🤖 Chat de Tomás<br/>Consulta el consentimiento vigente<br/>antes de compartir con Cohere"]
-    X["⛔ Error controlado<br/>Campos inválidos o contraseña incorrecta"]
-    A --> B --> C
-    C -->|Editar perfil| D --> E --> F --> G
-    F -.->|Consentimiento| K
-    C -->|Eliminar cuenta| H --> I --> J
-    D -->|Formato inválido| X
-    I -->|Contraseña rechazada| X
+  N0["Sesión válida"]
+  N1["Leer cuenta pública"]
+  N2["Editar campos permitidos"]
+  N3["Guardar consentimiento y zona"]
+  N4["Contraseña y confirmación"]
+  N5["Borrar cuenta y dependencias"]
+  N0 --> N1
+  N1 --> N2
+  N2 --> N3
+  N3 --> N4
+  N4 --> N5
 ```
 
-Gianluca maneja ingreso y recuperación; vos manejás el perfil propio y su borrado. Revocar consentimiento impide nuevas consultas al proveedor, pero no equivale a eliminar el historial ya guardado.
+## Archivos y funciones
 
-## Tu funcionalidad
+Pantalla: [Cuenta.jsx](../client/src/pages/Cuenta.jsx). Backend: [controllers/usuarios.controller.js](../controllers/usuarios.controller.js). Las rutas están en [usuarios.routes.js](../routes/usuarios.routes.js) y [gimnasio.routes.js](../routes/gimnasio.routes.js).
 
-**Casos:** CU005, CU006. **Pantallas:** `/me`.
+| Función | Qué hace y qué tenés que poder explicar |
+| --- | --- |
+| [verCuenta](../controllers/usuarios.controller.js#L167) | Devuelve los campos públicos del usuario autenticado. |
+| [datosPublicos](../controllers/usuarios.controller.js#L14) | Selecciona qué campos llegan al cliente y descifra el teléfono, sin incluir hash ni token. |
+| [actualizarDatos](../controllers/usuarios.controller.js#L171) | Valida nombre, teléfono, fecha, género, zona horaria y consentimiento; guarda solo campos permitidos. |
+| [eliminarCuenta](../controllers/usuarios.controller.js#L228) | Exige contraseña y confirmación; borra cuenta y dependencias en una transacción. |
+| [encriptarRreversible](../controllers/seguridad.controller.js#L10) | Cifra el teléfono con una clave privada y un IV nuevo. |
+| [desencriptar](../controllers/seguridad.controller.js#L31) | Recupera el teléfono y verifica su autenticidad. |
 
-No hay administración de terceros en la preentrega. Acceso/recuperación pertenecen a Gianluca; no compartas una contraseña real al demostrar el borrado.
+## Librerías
 
-## Archivos que tenés que ubicar
+React y Axios; bcrypt compara la contraseña para borrar; crypto de Node cifra/descifra el teléfono con AES-GCM; Sequelize y claves foráneas eliminan datos relacionados. La clave privada de cifrado está fuera del repositorio.
 
-- [client/src/pages/Account.jsx](../client/src/pages/Account.jsx).
-- [controllers/accounts.controller.js](../controllers/accounts.controller.js).
-- [routes/accounts.routes.js](../routes/accounts.routes.js).
-- [controllers/security.controller.js](../controllers/security.controller.js).
+## Qué entender
 
-## Qué hace cada función importante
+Autenticación no es autorización: saber quién sos no permite ver registros de otro. Cada consulta usa usuario_id de la sesión, no del formulario. Teléfono debe recuperarse para mostrarse; la contraseña solo se compara como hash. Retirar consentimiento bloquea futuras llamadas IA, no borra el historial automáticamente.
 
-| Función                                                      | Para qué sirve                                                                                   |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| [Account](../client/src/pages/Account.jsx#L6)                | Edita datos personales y consentimiento; pide contraseña y confirmación para eliminar la cuenta. |
-| [publicUser](../controllers/accounts.controller.js#L26)      | Devuelve solo campos públicos y teléfono descifrado; nunca expone hashes o secretos.             |
-| [updateProfile](../controllers/accounts.controller.js#L168)  | Modifica únicamente los campos permitidos y audita la operación.                                 |
-| [deleteAccount](../controllers/accounts.controller.js#L319)  | Verifica la contraseña y confirma eliminación de datos propios.                                  |
-| [deleteUserData](../controllers/accounts.controller.js#L262) | Elimina registros dependientes dentro de una transacción y desasocia bitácora.                   |
-| [encrypt](../controllers/security.controller.js#L42)         | Cifra teléfono con AES-256-GCM y un nonce; no se guarda texto directo.                           |
-| [decrypt](../controllers/security.controller.js#L44)         | Descifra datos solo en servidor, con comprobación de autenticidad.                               |
+Ubicá useState, useEffect cuando se use, los eventos del formulario y las llamadas Axios. Para cada función explicá entradas, validación, consulta y respuesta; no hace falta memorizar palabra por palabra.
 
-Los enlaces llevan a la declaración real. Entendé qué recibe, qué valida, qué devuelve y qué puede fallar; no hace falta repetir cada palabra del código. Las operaciones de soporte compartidas se explican en [el recorrido común](README.md).
+## Recorrido de defensa
 
-## Recorrido que tenés que poder explicar
+Cambiá un dato del perfil y guardá. Activá/desactivá consentimiento para mostrar el efecto en IA. Abrí la confirmación de eliminación y cancelala: no borres una cuenta de una persona durante la exposición.
 
-Editar perfil -> PATCH /me -> campos permitidos/cifrado -> MySQL -> datos públicos. Eliminar: confirmar más contraseña -> borrado dependiente -> sesión deja de autenticar.
+## Base común
 
-**Datos afectados o consultados:** usuarios y sus datos dependientes; bitacora conserva eventos sin identificar a la cuenta eliminada. La pantalla no escribe SQL directamente: llama a Express y Sequelize se ocupa de las consultas. Las escrituras conservan autorización, transacción, bitácora e integridad.
-
-## Librerías de tu recorrido
-
-React y React Router administran pantallas y acciones. Express recibe solicitudes; Zod valida contratos; Sequelize/mysql2 persisten o consultan MySQL. En cuentas se usan crypto de Node y Nodemailer para seguridad y recuperación; el correo de desarrollo es un archivo, no un envío real. Estudiá las librerías que realmente intervienen en tu función, no las dependencias completas.
-
-## Demostración para exponer
-
-1. Editar nombre o teléfono y recargar.
-2. Activar y revocar consentimiento para el chat de Tomás.
-3. Probar datos inválidos sin perder formulario.
-4. Con una cuenta ficticia, cancelar eliminación y luego confirmar; comprobar que no permite entrar otra vez.
-
-## Preguntas que deberías poder responder
-
-- ¿Cuál es la diferencia entre esta pantalla y su ruta de API?
-- ¿Qué datos entran, qué error se valida y qué respuesta recibe React?
-- ¿Qué queda guardado y cómo se comprueba después de recargar?
-- ¿Cómo se evita acceder a registros ajenos?
-- ¿Qué operación se cancela sin cambiar la base?
-
-## Límites de la preentrega
-
-No hay nutrición, administración ni generación/adaptación IA de planes en esta copia. El chat sí usa Cohere real si la clave privada y su cuota están disponibles. La base conserva tablas del DER futuro, pero tener una tabla o un método UML declarado no equivale a una funcionalidad terminada. Consultá [alcance](../docs/ALCANCE.md) y [verificación](../docs/VERIFICACION.md).
-
-Antes de exponer, registrá tus revisiones/aportes efectivos en [REPARTO.md](../REPARTO.md). No atribuyas cambios que no realizaste.
+Pantalla → ruta → controlador → modelo → MySQL. Las relaciones están en [models/index.js](../models/index.js). La confirmación está en [Confirmar.jsx](../client/src/components/Confirmar.jsx). Consultá el [alcance](../docs/ALCANCE.md). Vite solo inicia o compila React; no es una función del gimnasio ni hay que estudiar sus mecanismos internos.

@@ -1,90 +1,48 @@
-# Iván Lerner: Entrenamientos e historial
+# Iván Lerner · Entrenamientos e historial
 
-Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
+Responsabilidad de estudio y revisión de la edición 50; no es una declaración de autoría.
 
-## Mapa visual para ubicarte
-
-La rutina indica qué hacer; el entrenamiento conserva qué se hizo. La copia inicial evita que una edición posterior de la rutina cambie sesiones viejas.
+## Mapa mental
 
 ```mermaid
 flowchart TD
-    A["👤 Usuario<br/>Elige rutina y día"]
-    B["🖥️ Routines.jsx<br/>RoutineDetail → WorkoutForm<br/>Inicio, avance y cierre"]
-    C["🚪 fitness.routes.js<br/>POST /api/v1/workouts<br/>Sesión y datos válidos"]
-    D["🧭 workouts.controller.js<br/>startWorkout()<br/>Rutina propia activa + día con ejercicios<br/>Impide otra sesión en curso"]
-    E[("💾 MySQL · Sequelize<br/>entrenamientos + entrenamiento_ejercicios<br/>Copia independiente de la rutina")]
-    F["✍️ Usuario registra lo realizado<br/>Series, repeticiones, carga y distancia"]
-    G["🔎 saveWorkout()<br/>PUT /api/v1/workouts/:id<br/>Valida propietario, estado y ejercicios"]
-    H{"¿Guarda avance o cierra?"}
-    I["▶️ Sigue iniciado<br/>Puede retomar y guardar otra vez"]
-    J["🏁 Cierre confirmado<br/>Completado, incompleto o cancelado<br/>Fija fecha final y libera sesión activa"]
-    K["📚 Workouts / WorkoutDetail<br/>Historial paginado y detalle<br/>Sesión cerrada sin edición"]
-    X["⛔ Rechazo controlado<br/>Sesión duplicada, datos ajenos<br/>o intento de editar un cierre"]
-    A --> B --> C --> D --> E --> F --> G --> H
-    H -->|Avance| I --> F
-    H -->|Cierre| J --> K
-    G -->|Guarda cambios juntos| E
-    D -->|No cumple las reglas| X
-    G -->|No cumple las reglas| X
+  N0["Rutina activa"]
+  N1["Elegir día"]
+  N2["Copiar ejercicios al registro"]
+  N3["Guardar avance"]
+  N4["Cerrar con confirmación"]
+  N5["Historial inmutable"]
+  N0 --> N1
+  N1 --> N2
+  N2 --> N3
+  N3 --> N4
+  N4 --> N5
 ```
 
-startWorkout() abre una sesión; saveWorkout() registra avance o cierre. Cancelar una sesión es un estado guardado; cancelar un diálogo de confirmación no envía cambios.
+## Archivos y funciones
 
-## Tu funcionalidad
+Pantalla: [Entrenamientos.jsx](../client/src/pages/Entrenamientos.jsx). Backend: [controllers/entrenamientos.controller.js](../controllers/entrenamientos.controller.js). Las rutas están en [usuarios.routes.js](../routes/usuarios.routes.js) y [gimnasio.routes.js](../routes/gimnasio.routes.js).
 
-**Casos:** CU021. **Pantallas:** `/entrenamientos, /entrenamientos/:id`.
+| Función | Qué hace y qué tenés que poder explicar |
+| --- | --- |
+| [listarEntrenamientos](../controllers/entrenamientos.controller.js#L9) | Devuelve solo el historial propio y sus ejercicios ordenados. |
+| [iniciarEntrenamiento](../controllers/entrenamientos.controller.js#L24) | Selecciona una rutina activa y un día con ejercicios; crea una sesión y copia los ejercicios. |
+| [actualizarRegistro](../controllers/entrenamientos.controller.js#L93) | Valida el conjunto de ejercicios, guarda el avance o cierra completo/incompleto/cancelado. Un cierre no se puede volver a editar. |
 
-Valentín diseña rutinas; Joaquín explica el catálogo. Mateo usa las sesiones para el progreso.
+## Librerías
 
-## Archivos que tenés que ubicar
+React y Axios para formularios; Sequelize para rutina, sesión y ejercicios. Una transacción guarda cabecera y detalle juntos. La columna única usuario_en_curso impide dos sesiones simultáneas.
 
-- [client/src/pages/Routines.jsx](../client/src/pages/Routines.jsx).
-- [controllers/workouts.controller.js](../controllers/workouts.controller.js).
-- [routes/fitness.routes.js](../routes/fitness.routes.js).
-- [models/Entrenamiento.model.js](../models/Entrenamiento.model.js).
-- [models/EntrenamientoEjercicio.model.js](../models/EntrenamientoEjercicio.model.js).
+## Qué entender
 
-## Qué hace cada función importante
+Plan y registro son distintos: editar una rutina no debe cambiar lo entrenado. Completo requiere todos los ejercicios, incompleto al menos uno, cancelado ninguno obligatorio. El peso registrado es el real. Distancia se expresa en km.
 
-| Función                                                    | Para qué sirve                                                                                               |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [Workouts](../client/src/pages/Routines.jsx#L601)          | Lista sesiones y permite paginar el historial.                                                               |
-| [WorkoutDetail](../client/src/pages/Routines.jsx#L647)     | Carga el detalle autorizado antes de mostrar el formulario.                                                  |
-| [WorkoutForm](../client/src/pages/Routines.jsx#L652)       | Registra series, repeticiones, peso real y ejercicios realizados; confirma el cierre.                        |
-| [startWorkout](../controllers/workouts.controller.js#L46)  | Exige rutina propia y día válido; impide dos sesiones en curso y toma una copia histórica de los ejercicios. |
-| [saveWorkout](../controllers/workouts.controller.js#L154)  | Permite guardar avance o cerrar; un entrenamiento terminado no se vuelve a modificar.                        |
-| [workoutDetail](../controllers/workouts.controller.js#L18) | Devuelve ejercicios de esa sesión, no los de una rutina editada después.                                     |
-| [listWorkouts](../controllers/workouts.controller.js#L33)  | Devuelve historial propio paginado con conteo total.                                                         |
+Ubicá useState, useEffect cuando se use, los eventos del formulario y las llamadas Axios. Para cada función explicá entradas, validación, consulta y respuesta; no hace falta memorizar palabra por palabra.
 
-Los enlaces llevan a la declaración real. Entendé qué recibe, qué valida, qué devuelve y qué puede fallar; no hace falta repetir cada palabra del código. Las operaciones de soporte compartidas se explican en [el recorrido común](README.md).
+## Recorrido de defensa
 
-## Recorrido que tenés que poder explicar
+Creá una rutina con un ejercicio, iniciá el lunes, registrá peso y marcá realizado. Probá guardar avance antes de completar. Mostrá el historial y explicá por qué el registro conserva una copia.
 
-Rutina manual de Valentín -> inicio de sesión -> copia de ejercicios -> avance -> confirmación de completado -> registro histórico inmutable.
+## Base común
 
-**Datos afectados o consultados:** entrenamientos, entrenamiento_ejercicios, rutinas y bitacora. La pantalla no escribe SQL directamente: llama a Express y Sequelize se ocupa de las consultas. Las escrituras conservan autorización, transacción, bitácora e integridad.
-
-## Librerías de tu recorrido
-
-React y React Router administran pantallas y acciones. Express recibe solicitudes; Zod valida contratos; Sequelize/mysql2 persisten o consultan MySQL. En cuentas se usan crypto de Node y Nodemailer para seguridad y recuperación; el correo de desarrollo es un archivo, no un envío real. Estudiá las librerías que realmente intervienen en tu función, no las dependencias completas.
-
-## Demostración para exponer
-
-1. Iniciar una sesión desde una rutina.
-2. Marcar ejercicios y guardar avance antes de finalizar.
-3. Completar y comprobar que ya no se puede editar.
-4. Cambiar la rutina y verificar que la sesión vieja no cambia.
-
-## Preguntas que deberías poder responder
-
-- ¿Cuál es la diferencia entre esta pantalla y su ruta de API?
-- ¿Qué datos entran, qué error se valida y qué respuesta recibe React?
-- ¿Qué queda guardado y cómo se comprueba después de recargar?
-- ¿Cómo se evita acceder a registros ajenos?
-- ¿Qué operación se cancela sin cambiar la base?
-
-## Límites de la preentrega
-
-No hay nutrición, administración ni generación/adaptación IA de planes en esta copia. El chat sí usa Cohere real si la clave privada y su cuota están disponibles. La base conserva tablas del DER futuro, pero tener una tabla o un método UML declarado no equivale a una funcionalidad terminada. Consultá [alcance](../docs/ALCANCE.md) y [verificación](../docs/VERIFICACION.md).
-
-Antes de exponer, registrá tus revisiones/aportes efectivos en [REPARTO.md](../REPARTO.md). No atribuyas cambios que no realizaste.
+Pantalla → ruta → controlador → modelo → MySQL. Las relaciones están en [models/index.js](../models/index.js). La confirmación está en [Confirmar.jsx](../client/src/components/Confirmar.jsx). Consultá el [alcance](../docs/ALCANCE.md). Vite solo inicia o compila React; no es una función del gimnasio ni hay que estudiar sus mecanismos internos.

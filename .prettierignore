@@ -1,7 +1,0 @@
-node_modules
-.local
-client/dist
-models/exercises
-package-lock.json
-playwright-report
-test-results

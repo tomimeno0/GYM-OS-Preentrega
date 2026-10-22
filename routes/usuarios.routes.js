@@ -1,0 +1,11 @@
+const express = require("express");
+const { verificarSesion } = require("../controllers/auth.controller");
+const usuarios = require("../controllers/usuarios.controller");
+const router = express.Router();
+router.post("/registro", usuarios.registrarUsuario);
+router.post("/login", usuarios.iniciarSesion);
+router.get("/cuenta", verificarSesion, usuarios.verCuenta);
+router.put("/cuenta", verificarSesion, usuarios.actualizarDatos);
+router.delete("/cuenta", verificarSesion, usuarios.eliminarCuenta);
+router.post("/logout", verificarSesion, usuarios.cerrarSesion);
+module.exports = router;

@@ -1,258 +1,243 @@
-import React, { Component, Suspense, lazy, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  NavLink,
   Link,
-  Outlet,
-  useLocation,
-} from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Dumbbell,
-  Target,
-  ChartNoAxesCombined,
-  BookOpen,
-  History,
-  UserRound,
-  LogOut,
-  Menu,
-  X,
-  ArrowUpRight,
-  Bot,
-} from 'lucide-react';
-import { AuthProvider, useAuth, api, useAction } from './lib';
-import { Button, Confirm, Empty, Feedback } from './components/ui';
-import Auth, { Landing, Brand } from './pages/Auth';
-const named = (loader, name) => lazy(() => loader().then((m) => ({ default: m[name] })));
-const Dashboard = named(() => import('./pages/Fitness'), 'Dashboard'),
-  Progress = named(() => import('./pages/Fitness'), 'Progress'),
-  Goals = named(() => import('./pages/Fitness'), 'Goals');
-const RoutineList = named(() => import('./pages/Routines'), 'RoutineList'),
-  RoutineDetail = named(() => import('./pages/Routines'), 'RoutineDetail'),
-  RoutineEditor = named(() => import('./pages/Routines'), 'RoutineEditor'),
-  ExerciseCatalog = named(() => import('./pages/Routines'), 'ExerciseCatalog'),
-  Workouts = named(() => import('./pages/Routines'), 'Workouts'),
-  WorkoutDetail = named(() => import('./pages/Routines'), 'WorkoutDetail');
-const Account = lazy(() => import('./pages/Account')),
-  Assistant = lazy(() => import('./pages/Assistant'));
-class ErrorBoundary extends Component {
-  state = { error: null };
-  static getDerivedStateFromError(error) {
-    return { error };
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+} from "react-router-dom";
+import axios from "axios";
+import Confirmar from "./components/Confirmar";
+import Acceso from "./pages/Acceso";
+import Cuenta from "./pages/Cuenta";
+import Progreso from "./pages/Progreso";
+import Medidas from "./pages/Medidas";
+import Objetivos from "./pages/Objetivos";
+import Rutinas from "./pages/Rutinas";
+import Entrenamientos from "./pages/Entrenamientos";
+import Asistente from "./pages/Asistente";
+axios.defaults.baseURL = "/api";
+axios.defaults.withCredentials = true;
+export default function App() {
+  const [usuario, setUsuario] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+  const [confirmacion, setConfirmacion] = useState(false);
+  const navegar = useNavigate();
+  useEffect(() => {
+    axios
+      .get("/cuenta")
+      .then((r) => setUsuario(r.data.user))
+      .catch((e) => {
+        if (e.response?.status !== 401)
+          setError(
+            "No se pudo conectar con el servidor. Recargá para volver a intentar.",
+          );
+      })
+      .finally(() => setCargando(false));
+  }, []);
+  async function salir(confirmado = false) {
+    if (!confirmado) {
+      setConfirmacion(true);
+      return;
+    }
+    setConfirmacion(false);
+    try {
+      await axios.post("/logout", { confirmar: true });
+      setUsuario(null);
+      navegar("/");
+    } catch (e) {
+      setError(e.response?.data?.message || "No se pudo cerrar la sesión.");
+    }
   }
-  render() {
-    return this.state.error ? (
-      <div className="fatal">
-        <h1>No pudimos mostrar esta pantalla.</h1>
-        <p>Recargá la página. Tus datos guardados se conservan.</p>
-        <Button onClick={() => window.location.reload()}>Recargar</Button>
-      </div>
-    ) : (
-      this.props.children
-    );
-  }
-}
-const links = [
-  ['/dashboard', 'Mi panel', LayoutDashboard],
-  ['/objetivos', 'Objetivos', Target],
-  ['/rutinas', 'Mis rutinas', Dumbbell],
-  ['/entrenamientos', 'Entrenamientos', History],
-  ['/progreso', 'Mi progreso', ChartNoAxesCombined],
-  ['/ejercicios', 'Explorar ejercicios', BookOpen],
-  ['/asistente', 'Asistente IA', Bot],
-];
-function Protected({ permission, children }) {
-  const { user } = useAuth();
-  return permission && !user.permisos.includes(permission) ? (
-    <Empty title="Esta sección necesita otro permiso">
-      Tu cuenta no tiene acceso. Consultá al administrador.
-    </Empty>
-  ) : (
-    children
-  );
-}
-function Shell() {
-  const { user, loading, error, refresh, setUser } = useAuth(),
-    [menu, setMenu] = useState(false),
-    [logout, setLogout] = useState(false),
-    action = useAction(),
-    location = useLocation();
-  if (loading) return <div className="loading">Preparando tu espacio…</div>;
-  if (error)
-    return (
-      <div className="fatal">
-        <Feedback error={error} />
-        <Button onClick={refresh}>Reintentar conexión</Button>
-      </div>
-    );
-  if (!user) return <Navigate to="/login" replace />;
+  if (cargando) return <main className="cargando">Cargando GYM-OS…</main>;
   return (
-    <div className="app-layout">
-      <a className="skip-link" href="#main-content">
-        Saltar al contenido
-      </a>
-      {menu && (
-        <button className="sidebar-scrim" aria-label="Cerrar menú" onClick={() => setMenu(false)} />
-      )}
-      <aside className={`sidebar ${menu ? 'open' : ''}`}>
-        <div className="sidebar-brand">
-          <Brand />
-          <button
-            className="icon-btn mobile-only"
-            aria-label="Cerrar menú"
-            onClick={() => setMenu(false)}
-          >
-            <X />
-          </button>
-        </div>
-        <p className="nav-label">PREENTREGA · 20/39 CASOS</p>
-        <nav aria-label="Principal">
-          {user.permisos.includes('fitness:use') &&
-            links.map(([path, label, Icon]) => (
-              <NavLink to={path} key={path} onClick={() => setMenu(false)}>
-                <Icon size={19} />
-                {label}
+    <>
+      {confirmacion && (
+        <Confirmar
+          texto="¿Cerrar tu sesión?"
+          onAceptar={() => salir(true)}
+          onCancelar={() => setConfirmacion(false)}
+        />
+      )}{" "}
+      {usuario && (
+        <aside className="sidebar">
+          <Link className="marca" to="/dashboard">
+            GYM<span>—</span>OS<small>Tu próximo paso.</small>
+          </Link>
+          <p className="nav-label">MI ESPACIO</p>
+          <nav>
+            {[
+              ["/dashboard", "◈", "Resumen"],
+              ["/medidas", "↗", "Medidas y progreso"],
+              ["/objetivos", "◎", "Objetivos"],
+              ["/rutinas", "▤", "Rutinas"],
+              ["/entrenamientos", "▶", "Entrenamientos"],
+              ["/asistente", "✦", "Asistente IA"],
+              ["/cuenta", "○", "Mi cuenta"],
+            ].map(([url, icon, texto]) => (
+              <NavLink key={url} to={url}>
+                <span aria-hidden="true">{icon}</span>
+                {texto}
               </NavLink>
             ))}
-          <div className="nav-divider" />
-          <NavLink to="/me" onClick={() => setMenu(false)}>
-            <UserRound size={19} />
-            Mi cuenta
-          </NavLink>
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <span>NO SE TRATA DE UN DÍA.</span>
-            <strong>
-              Se trata de
-              <br />
-              seguir volviendo.
-            </strong>
-            <ArrowUpRight size={27} />
+          </nav>
+          <div className="nav-pie">
+            <strong>{usuario.nombre}</strong>
+            <small>Preentrega · edición 50</small>
+            <button className="secundario" onClick={() => salir()}>
+              Cerrar sesión
+            </button>
           </div>
-          <button className="profile-button" onClick={() => setLogout(true)}>
-            <span className="avatar">{user.nombre.slice(0, 1)}</span>
-            <span>
-              <strong>{user.nombre}</strong>
-              <small>Cerrar sesión</small>
-            </span>
-            <LogOut size={18} />
-          </button>
-        </div>
-      </aside>
-      <div className="workspace">
-        <header className="topbar">
-          <button
-            className="icon-btn mobile-only"
-            aria-label="Abrir menú"
-            onClick={() => setMenu(true)}
-          >
-            <Menu />
-          </button>
-          <div className="breadcrumb">
-            GYM—OS <span>/</span>{' '}
-            {links.find(([p]) => location.pathname.startsWith(p))?.[1] || 'Mi espacio'}
-          </div>
-          <Link to="/me" className="top-profile">
-            <span className="online-dot" />
-            Tu espacio personal<span className="avatar small">{user.nombre[0]}</span>
-          </Link>
-        </header>
-        <main id="main-content" className="main-content">
-          <ErrorBoundary key={location.pathname}>
-            <Suspense
-              fallback={
-                <div className="loading" role="status">
-                  Cargando sección…
-                </div>
-              }
-            >
-              <Outlet />
-            </Suspense>
-          </ErrorBoundary>
-        </main>
-        <footer className="app-footer">
-          <span>GYM—OS · Un día a la vez.</span>
-          <Link to="/nosotros">Sobre el proyecto ↗</Link>
-        </footer>
-      </div>
-      {logout && (
-        <Confirm
-          title="¿Cerrar sesión?"
-          action="Cerrar sesión"
-          onClose={() => setLogout(false)}
-          busy={action.busy}
-          error={action.error}
-          onConfirm={() =>
-            action.run(async () => {
-              await api('/auth/logout', { confirmar: true });
-              setUser(null);
-              setLogout(false);
-            })
-          }
-        >
-          Tus registros guardados se conservarán. Podés volver cuando quieras.
-        </Confirm>
+        </aside>
       )}
-    </div>
-  );
-}
-export default function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ErrorBoundary>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/nosotros" element={<Landing about />} />
-            <Route path="/acerca" element={<Navigate to="/nosotros" replace />} />
-            <Route path="/contacto" element={<Navigate to="/nosotros" replace />} />
-            {['login', 'registro', 'recuperar', 'restablecer'].map((mode) => (
-              <Route key={mode} path={`/${mode}`} element={<Auth key={mode} mode={mode} />} />
-            ))}
-            <Route element={<Shell />}>
-              {[
-                ['dashboard', Dashboard],
-                ['objetivos', Goals],
-                ['progreso', Progress],
-                ['rutinas', RoutineList],
-                ['rutinas/nueva', RoutineEditor],
-                ['rutinas/:id', RoutineDetail],
-                ['rutinas/:id/editar', RoutineEditor],
-                ['entrenamientos', Workouts],
-                ['entrenamientos/:id', WorkoutDetail],
-                ['ejercicios', ExerciseCatalog],
-                ['asistente', Assistant],
-              ].map(([path, Page]) => (
-                <Route
-                  key={path}
-                  path={path}
-                  element={
-                    <Protected permission="fitness:use">
-                      <Page />
-                    </Protected>
-                  }
-                />
-              ))}
-              <Route path="me" element={<Account />} />
-            </Route>
+      <div className={usuario ? "contenido" : ""}>
+        {error && (
+          <p role="alert" className="aviso error">
+            {error}
+            <button onClick={() => setError("")} aria-label="Cerrar aviso">
+              ×
+            </button>
+          </p>
+        )}
+        <Routes>
+          <Route
+            path="/"
+            element={usuario ? <Navigate to="/dashboard" /> : <Inicio />}
+          />
+          {["login", "registro"].map((modo) => (
             <Route
-              path="*"
+              key={modo}
+              path={"/" + modo}
               element={
-                <div className="fatal">
-                  <Brand />
-                  <Empty title="Este camino no existe" to="/dashboard" action="Volver a mi panel">
-                    Revisá la dirección o volvé a tu espacio.
-                  </Empty>
-                </div>
+                usuario ? (
+                  <Navigate to="/dashboard" />
+                ) : (
+                  <Acceso modo={modo} setUsuario={setUsuario} />
+                )
               }
             />
-          </Routes>
-        </ErrorBoundary>
-      </AuthProvider>
-    </BrowserRouter>
+          ))}
+          <Route
+            path="/dashboard"
+            element={
+              usuario ? (
+                <Progreso usuario={usuario} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/medidas"
+            element={
+              usuario ? <Medidas usuario={usuario} /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/objetivos"
+            element={
+              usuario ? (
+                <Objetivos usuario={usuario} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/rutinas"
+            element={usuario ? <Rutinas /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/entrenamientos"
+            element={usuario ? <Entrenamientos /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/asistente"
+            element={
+              usuario ? (
+                <Asistente usuario={usuario} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/cuenta"
+            element={
+              usuario ? (
+                <Cuenta usuario={usuario} setUsuario={setUsuario} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <main>
+                <h1>Página no encontrada</h1>
+                <Link to="/">Volver al inicio</Link>
+              </main>
+            }
+          />
+        </Routes>
+      </div>
+    </>
+  );
+}
+function Inicio() {
+  return (
+    <div className="inicio">
+      <header>
+        <Link className="marca" to="/">
+          GYM<span>—</span>OS
+        </Link>
+        <div className="acciones">
+          <Link to="/login">Iniciar sesión</Link>
+          <Link className="boton" to="/registro">
+            Crear cuenta ↗
+          </Link>
+        </div>
+      </header>
+      <main className="hero">
+        <p className="etiqueta">ENTRENÁ CON DIRECCIÓN</p>
+        <h1>
+          Tu esfuerzo.
+          <br />
+          Un plan.
+          <br />
+          <em>Más progreso.</em>
+        </h1>
+        <p className="bajada">
+          Organizá tus rutinas, entendé tus hábitos y registrá cada avance. Todo
+          tu entrenamiento, en un solo lugar.
+        </p>
+        <Link className="boton" to="/registro">
+          Empezar mi camino ↗
+        </Link>
+        <div className="hero-cifras">
+          <span>
+            01 <small>Definí tu objetivo</small>
+          </span>
+          <span>
+            02 <small>Armá tu rutina</small>
+          </span>
+          <span>
+            03 <small>Seguí tu progreso</small>
+          </span>
+        </div>
+        <div className="hero-dibujo" aria-hidden="true">
+          <span>G</span>
+          <div className="hero-tarjeta">
+            CONSTANCIA &gt; PERFECCIÓN
+            <br />
+            <strong>Un día a la vez.</strong>
+          </div>
+        </div>
+      </main>
+      <footer>GYM-OS · Proyecto educativo · React + Express + MySQL</footer>
+    </div>
   );
 }

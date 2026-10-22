@@ -1,15 +1,14 @@
 {
-  "name": "@gym-os/client",
-  "version": "1.0.0",
+  "name": "gym-os-50-client",
+  "version": "0.50.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "dev": "vite --host localhost --port 5178 --strictPort",
+    "build": "vite build"
   },
   "dependencies": {
-    "lucide-react": "1.38.0",
+    "axios": "1.20.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-router-dom": "7.18.3",
@@ -17,6 +16,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "6.1.1",
-    "vite": "8.2.2"
+    "vite": "8.3.5"
   }
 }

@@ -1,10 +1,9 @@
 {
-  "criterio": "Casos seleccionados de la matriz final; no porcentaje de lineas, esfuerzo ni certificacion academica. CU014 limita navegacion a rutinas manuales.",
+  "criterio": "Casos nominales, no porcentaje de esfuerzo ni certificación integral. Se quitó CU004 por pedido del usuario.",
   "incluidos": [
     "CU001",
     "CU002",
     "CU003",
-    "CU004",
     "CU005",
     "CU006",
     "CU007",
@@ -23,6 +22,7 @@
     "CU031"
   ],
   "fuera_de_alcance": [
+    "CU004",
     "CU015",
     "CU019",
     "CU022",

@@ -1,10 +1,35 @@
-import { sequelize } from '../config/db.js';
-import { schema, indexes } from '../config/schema.js';
+const { DataTypes } = require("sequelize");
+const { sequelize } = require("../config/db");
 
-export const EntrenamientoEjercicio = sequelize.define(
-  'entrenamiento_ejercicios',
-  schema.entrenamiento_ejercicios,
+const EntrenamientoEjercicio = sequelize.define(
+  "EntrenamientoEjercicio",
   {
-    indexes: indexes.entrenamiento_ejercicios || [],
+    id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    dvh: { type: DataTypes.STRING(64), allowNull: false, defaultValue: "" },
+    entrenamiento_id: { type: DataTypes.UUID, allowNull: false },
+    nombre_ejercicio: { type: DataTypes.STRING(150), allowNull: false },
+    ejercicio_id: { type: DataTypes.STRING(40), allowNull: true },
+    orden: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    series: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    repeticiones: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    peso_utilizado_kg: { type: DataTypes.DECIMAL(6, 2), allowNull: true },
+    realizado: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    observaciones: { type: DataTypes.TEXT },
   },
+  { tableName: "entrenamiento_ejercicios", timestamps: false },
 );
+
+module.exports = EntrenamientoEjercicio;

@@ -1,98 +1,48 @@
-# Gianluca Pizarro: Acceso y recuperación
+# Gianluca Pizarro · Registro e inicio/cierre de sesión
 
-Guía exclusiva de la **preentrega**, no de todas las funciones del proyecto final. Es una asignación de estudio y revisión; no afirma autoría histórica. El código se preparó con asistencia de Codex.
+Responsabilidad de estudio y revisión de la edición 50; no es una declaración de autoría.
 
-## Mapa visual para ubicarte
-
-La cuenta entra por los formularios y sale con una sesión. La recuperación usa un enlace temporal; no necesita conocer la contraseña anterior.
+## Mapa mental
 
 ```mermaid
 flowchart TD
-    A["👤 Usuario<br/>Registro, login o recuperación"]
-    B["🖥️ PANTALLA · Auth.jsx<br/>Auth() reúne los datos"]
-    C["🚪 ENTRADA · accounts.routes.js<br/>Express + esquemas Zod<br/>Valida formato y limita intentos"]
-    D{"¿Qué quiere hacer?"}
-    E["🔐 REGISTRARSE · register()<br/>Correo único + hashPassword()<br/>Crea usuario Cliente y sesión"]
-    F["🔑 INGRESAR · login()<br/>Comprueba contraseña y cuenta activa<br/>sessionFor() crea sesión"]
-    G["📨 RECUPERAR · requestRecovery()<br/>Token temporal de un solo uso<br/>sendRecovery() prepara enlace"]
-    H["🔄 RESTABLECER · resetPassword()<br/>Verifica token y vencimiento<br/>Nuevo hash + revoca sesiones"]
-    I[("💾 MySQL · Sequelize<br/>usuarios, roles, usuario_roles<br/>sesiones y recuperaciones")]
-    J["🍪 SESIÓN · Cookie HttpOnly<br/>authenticate() valida próximos accesos<br/>React abre el panel"]
-    K["🚪 SALIR · logout()<br/>Revoca sesión y borra cookie"]
-    X["⛔ Error controlado<br/>Datos inválidos, correo duplicado<br/>o credenciales incorrectas"]
-    A --> B --> C --> D
-    D -->|Registro| E
-    D -->|Login| F
-    D -->|Recuperación| G
-    G -->|Usuario abre enlace del archivo privado| H
-    E --> I
-    F --> I
-    H --> I
-    I -->|Registro o login correctos| J
-    H -->|Después del cambio, volver a ingresar| B
-    J -->|Confirma salir| K
-    E -->|Correo ocupado| X
-    F -->|Acceso rechazado| X
+  N0["Pantalla de acceso"]
+  N1["Ruta pública"]
+  N2["Controlador de usuarios"]
+  N3["Usuario y sesión"]
+  N4["Cookie HTTP-only"]
+  N0 --> N1
+  N1 --> N2
+  N2 --> N3
+  N3 --> N4
 ```
 
-La pantalla reúne datos; el controlador verifica; MySQL conserva hashes y sesiones. En esta preentrega la recuperación genera un archivo privado de correo, no una entrega SMTP comprobada.
+## Archivos y funciones
 
-## Tu funcionalidad
+Pantalla: [Acceso.jsx](../client/src/pages/Acceso.jsx). Backend: [controllers/usuarios.controller.js](../controllers/usuarios.controller.js). Las rutas están en [usuarios.routes.js](../routes/usuarios.routes.js) y [gimnasio.routes.js](../routes/gimnasio.routes.js).
 
-**Casos:** CU001–CU004. **Pantallas:** `/registro, /login, /recuperar, /restablecer`.
+| Función | Qué hace y qué tenés que poder explicar |
+| --- | --- |
+| [registrarUsuario](../controllers/usuarios.controller.js#L51) | Valida datos, rechaza correos repetidos, calcula el hash, crea usuario/rol/sesión y devuelve campos públicos. |
+| [iniciarSesion](../controllers/usuarios.controller.js#L123) | Busca por correo, compara la contraseña y crea una sesión de ocho horas. |
+| [abrirSesion](../controllers/usuarios.controller.js#L28) | Firma un JWT, guarda solo su hash y envía una cookie HTTP-only. |
+| [cerrarSesion](../controllers/usuarios.controller.js#L150) | Exige confirmación, elimina la sesión actual y limpia la cookie. |
+| [verificarSesion](../controllers/auth.controller.js#L6) | Verifica firma, vencimiento, sesión persistida y cuenta activa antes de llamar al controlador. |
 
-El perfil personal y borrado corresponden a Simón; no mezclar recuperación con administración de usuarios.
+## Librerías
 
-## Archivos que tenés que ubicar
+React y Axios envían formularios; bcrypt calcula y compara hashes; jsonwebtoken firma y verifica sesiones; cookie-parser lee la cookie; Sequelize guarda usuarios, roles y sesiones.
 
-- [routes/accounts.routes.js](../routes/accounts.routes.js).
-- [controllers/accounts.controller.js](../controllers/accounts.controller.js).
-- [controllers/security.controller.js](../controllers/security.controller.js).
-- [controllers/mail.controller.js](../controllers/mail.controller.js).
-- [client/src/pages/Auth.jsx](../client/src/pages/Auth.jsx).
+## Qué entender
 
-## Qué hace cada función importante
+Diferencia entre registro y login, contraseña y hash, JWT y cookie. El servidor comprueba la sesión y cada usuario solo accede a sus datos. No se estudia envío de correos ni cambio de contraseña por enlace.
 
-| Función                                                       | Para qué sirve                                                                          |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [Auth](../client/src/pages/Auth.jsx#L118)                     | Elige registro, login o recuperación según la pantalla; conserva errores de formulario. |
-| [register](../controllers/accounts.controller.js#L57)         | Valida unicidad, calcula hash y crea usuario Cliente más sesión en una transacción.     |
-| [sessionFor](../controllers/accounts.controller.js#L44)       | Crea un token aleatorio; guarda solamente su hash y vencimiento.                        |
-| [login](../controllers/accounts.controller.js#L123)           | Comprueba contraseña y estado, registra el acceso y abre sesión.                        |
-| [authenticate](../controllers/accounts.controller.js#L125)    | Lee token y fecha; rechaza sesión revocada o cuenta no activa.                          |
-| [logout](../controllers/accounts.controller.js#L155)          | Revoca la sesión después de confirmar; cancelar en React no envía cambios.              |
-| [requestRecovery](../controllers/accounts.controller.js#L212) | Genera enlace temporal y mensaje sin revelar si existe el correo.                       |
-| [resetPassword](../controllers/accounts.controller.js#L240)   | Verifica token de un solo uso, cambia el hash y revoca sesiones.                        |
+Ubicá useState, useEffect cuando se use, los eventos del formulario y las llamadas Axios. Para cada función explicá entradas, validación, consulta y respuesta; no hace falta memorizar palabra por palabra.
 
-Los enlaces llevan a la declaración real. Entendé qué recibe, qué valida, qué devuelve y qué puede fallar; no hace falta repetir cada palabra del código. Las operaciones de soporte compartidas se explican en [el recorrido común](README.md).
+## Recorrido de defensa
 
-## Recorrido que tenés que poder explicar
+Registrá una cuenta sintética, cerrá sesión, volvé a ingresar y probá una contraseña incorrecta. Explicá qué se guarda en la base y qué vuelve al navegador.
 
-Correo y contraseña -> ruta validada -> hash/sesión -> cookie HttpOnly -> acceso al panel. En recuperación se genera un correo privado de desarrollo; no llega a un buzón externo.
+## Base común
 
-**Datos afectados o consultados:** usuarios, usuario_roles, roles, sesiones, recuperaciones y bitacora. La pantalla no escribe SQL directamente: llama a Express y Sequelize se ocupa de las consultas. Las escrituras conservan autorización, transacción, bitácora e integridad.
-
-## Librerías de tu recorrido
-
-React y React Router administran pantallas y acciones. Express recibe solicitudes; Zod valida contratos; Sequelize/mysql2 persisten o consultan MySQL. En cuentas se usan crypto de Node y Nodemailer para seguridad y recuperación; el correo de desarrollo es un archivo, no un envío real. Estudiá las librerías que realmente intervienen en tu función, no las dependencias completas.
-
-## Demostración para exponer
-
-1. Registrar una cuenta y volver a entrar.
-2. Probar correo duplicado y contraseña errónea.
-3. Cancelar y luego confirmar el cierre de sesión.
-4. Explicar el enlace temporal y dónde queda el correo de desarrollo.
-
-## Preguntas que deberías poder responder
-
-- ¿Cuál es la diferencia entre esta pantalla y su ruta de API?
-- ¿Qué datos entran, qué error se valida y qué respuesta recibe React?
-- ¿Qué queda guardado y cómo se comprueba después de recargar?
-- ¿Cómo se evita acceder a registros ajenos?
-- ¿Qué operación se cancela sin cambiar la base?
-
-## Límites de la preentrega
-
-No hay nutrición, administración ni generación/adaptación IA de planes en esta copia. El chat sí usa Cohere real si la clave privada y su cuota están disponibles. La base conserva tablas del DER futuro, pero tener una tabla o un método UML declarado no equivale a una funcionalidad terminada. Consultá [alcance](../docs/ALCANCE.md) y [verificación](../docs/VERIFICACION.md).
-
-Antes de exponer, registrá tus revisiones/aportes efectivos en [REPARTO.md](../REPARTO.md). No atribuyas cambios que no realizaste.
+Pantalla → ruta → controlador → modelo → MySQL. Las relaciones están en [models/index.js](../models/index.js). La confirmación está en [Confirmar.jsx](../client/src/components/Confirmar.jsx). Consultá el [alcance](../docs/ALCANCE.md). Vite solo inicia o compila React; no es una función del gimnasio ni hay que estudiar sus mecanismos internos.
